@@ -305,6 +305,21 @@ la tabla cuando hay más columnas de las que caben, y lo oculta cuando el
 scroll ya llegó al final — se actualiza en `scroll`, en `resize`, y cada
 vez que se recarga la tabla.
 
+### 6.6 Tarjetas de KPI en el resumen mensual
+
+La pestaña de resumen mensual ganó tres tarjetas grandes ("Horas
+facturables", "Clientes con actividad", "Registros facturables") sobre
+la tabla existente, con el número en degradado de color (`.stat-value`
+en `style.css`, `background-clip: text`) — la misma paleta que ya usa el
+resto de la app. Viven en el HTML estático (no se crean por JS), así que
+`initCardTilt()` ya las detecta al cargar la página y les aplica la
+misma inclinación 3D al mouse que a cualquier otra `.card-3d`; solo
+`updateStatCards()` en `summary.js` actualiza los tres números, con los
+mismos datos que ya trae la respuesta de `/api/summary.php` (sin ninguna
+llamada extra). Funcionan igual para los 3 roles porque solo reflejan lo
+que el backend ya autoriza ver — un consultor ve sus propios totales, un
+admin ve el agregado o el de un consultor filtrado (ver §5, seguridad).
+
 ## 7. Animaciones 3D
 
 Todas las animaciones viven en `frontend/assets/css/animations.css` y usan

@@ -229,6 +229,32 @@
         <p class="scope-hint" id="summary-scope-hint"></p>
       </div>
 
+      <!-- ES: Tarjetas de resumen tipo "dashboard" (KPIs grandes). Son
+           parte del HTML estatico -- no se crean por JS -- para que
+           hereden el mismo efecto de inclinacion 3D al mouse
+           (initCardTilt() en main.js ya las detecta al cargar la
+           pagina, igual que al resto de las tarjetas .card-3d);
+           summary.js solo actualiza los numeros de adentro.
+           EN: "Dashboard"-style summary cards (big KPIs). Part of the
+           static HTML -- not created via JS -- so they inherit the
+           same mouse-driven 3D tilt effect (initCardTilt() in main.js
+           already picks them up on page load, same as every other
+           .card-3d card); summary.js only updates the numbers inside. -->
+      <div class="stat-cards">
+        <div class="panel card-3d stat-card">
+          <span class="stat-label">Horas facturables</span>
+          <span class="stat-value" id="stat-total-hours">0.00h</span>
+        </div>
+        <div class="panel card-3d stat-card">
+          <span class="stat-label">Clientes con actividad</span>
+          <span class="stat-value" id="stat-client-count">0</span>
+        </div>
+        <div class="panel card-3d stat-card">
+          <span class="stat-label">Registros facturables</span>
+          <span class="stat-value" id="stat-record-count">0</span>
+        </div>
+      </div>
+
       <div class="panel card-3d">
         <h2>Horas facturables por cliente</h2>
         <div id="summary-chart" class="summary-chart"></div>

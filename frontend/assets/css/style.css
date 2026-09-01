@@ -481,6 +481,42 @@ body {
 .pill-overlap { background: rgba(245, 158, 11, 0.18); color: var(--accent-warn); }
 
 /* ---------------------------------------------------------------------
+   ES: Tarjetas de resumen tipo "dashboard" (KPIs grandes)
+   EN: "Dashboard"-style summary cards (big KPIs)
+   --------------------------------------------------------------------- */
+.stat-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.stat-card {
+  text-align: center;
+  padding: 26px 20px;
+}
+.stat-label {
+  display: block;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-low);
+  margin-bottom: 10px;
+}
+.stat-value {
+  display: block;
+  font-size: 2.1rem;
+  font-weight: 700;
+  line-height: 1.1;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+@media (max-width: 640px) {
+  .stat-cards { grid-template-columns: 1fr; }
+}
+
+/* ---------------------------------------------------------------------
    ES: Gráfico de barras del resumen
    EN: Summary bar chart
    --------------------------------------------------------------------- */

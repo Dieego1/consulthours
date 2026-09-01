@@ -63,10 +63,30 @@ async function loadSummary() {
     }
 
     document.getElementById('summary-total').textContent = `${Number(data.total_billable_hours).toFixed(2)}h`;
+    updateStatCards(data);
   } catch (err) {
     tbody.innerHTML = `<tr><td colspan="3" class="empty-row">${escapeHtml(err.message)}</td></tr>`;
     chart.innerHTML = '';
+    updateStatCards(null);
   }
+}
+
+/**
+ * ES: Llena las tarjetas de KPI de arriba (horas, clientes con
+ *     actividad, registros) con los mismos datos que ya trae la
+ *     respuesta de /api/summary.php -- no hace ninguna llamada nueva.
+ * EN: Fills the KPI cards above (hours, clients with activity, records)
+ *     with the same data the /api/summary.php response already carries
+ *     -- makes no extra call.
+ */
+function updateStatCards(data) {
+  const totalHours = data ? Number(data.total_billable_hours) : 0;
+  const clientCount = data ? data.clients.length : 0;
+  const recordCount = data ? data.clients.reduce((sum, c) => sum + c.record_count, 0) : 0;
+
+  document.getElementById('stat-total-hours').textContent = `${totalHours.toFixed(2)}h`;
+  document.getElementById('stat-client-count').textContent = clientCount;
+  document.getElementById('stat-record-count').textContent = recordCount;
 }
 
 function currentYearMonth() {
