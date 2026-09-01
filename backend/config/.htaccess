@@ -1,0 +1,7 @@
+# ES: database.php define la conexión a MySQL. No debería ser alcanzable
+# nunca por URL directa (aunque hoy no imprime nada sensible si se
+# solicita así, es una capa extra de defensa en profundidad).
+# EN: database.php defines the MySQL connection. It should never be
+# reachable via a direct URL (today it prints nothing sensitive if
+# requested that way, but this is an extra layer of defense in depth).
+Require all denied

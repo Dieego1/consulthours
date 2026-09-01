@@ -1,0 +1,12 @@
+# ES: Esta carpeta contiene el esquema y los datos de prueba (incluidas
+# contraseñas en texto plano en seed_data.json). Nadie debe poder
+# descargarlos abriendo la URL directamente -- solo se usan desde la
+# línea de comandos (seed.php) o importándolos a mano en phpMyAdmin
+# (seed.sql), nunca a través de Apache.
+#
+# EN: This folder holds the schema and seed data (including plaintext
+# test passwords in seed_data.json). Nobody should be able to download
+# them by opening the URL directly -- they are only meant to be used from
+# the command line (seed.php) or imported by hand in phpMyAdmin
+# (seed.sql), never served over Apache.
+Require all denied

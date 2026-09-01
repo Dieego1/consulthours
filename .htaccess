@@ -1,0 +1,8 @@
+# ES: Hace que abrir la raíz del proyecto (http://localhost/PRUEBA TECNICA/)
+# siga funcionando igual que antes de mover index.php a public/: Apache
+# sirve public/index.php como si fuera el índice de esta carpeta.
+#
+# EN: Makes opening the project root (http://localhost/PRUEBA TECNICA/)
+# keep working exactly as before index.php moved into public/: Apache
+# serves public/index.php as this folder's index.
+DirectoryIndex public/index.php

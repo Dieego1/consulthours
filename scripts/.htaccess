@@ -1,0 +1,7 @@
+# ES: scripts/verify_summary.py es un script de línea de comandos, no una
+# página web -- Apache no ejecuta Python, así que sin esta regla
+# cualquiera podría descargar su código fuente abriendo la URL.
+# EN: scripts/verify_summary.py is a command-line script, not a web page
+# -- Apache does not execute Python, so without this rule anyone could
+# download its source code by opening the URL.
+Require all denied

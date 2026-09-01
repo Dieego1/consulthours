@@ -1,0 +1,9 @@
+# ES: Estos archivos son piezas internas (auth.php, functions.php,
+# bootstrap.php) que otros archivos PHP cargan con require_once -- eso
+# sigue funcionando igual (PHP los lee del disco, no por HTTP). Lo que se
+# bloquea es que alguien los abra directamente por URL.
+# EN: These files are internal building blocks (auth.php, functions.php,
+# bootstrap.php) that other PHP files load via require_once -- that still
+# works exactly the same (PHP reads them from disk, not over HTTP). What
+# this blocks is someone opening them directly by URL.
+Require all denied
