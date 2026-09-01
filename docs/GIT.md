@@ -140,3 +140,83 @@ commit in the middle of the list). This is intentional — it lets someone
 review the history and confirm, at every step, that the project was in a
 coherent state, instead of having to reach the very end before anything
 makes sense.
+
+---
+
+## ES: Git vs. GitHub — y cómo se entrega este proyecto
+
+**Git y GitHub no son lo mismo.** Git es el sistema de control de
+versiones que corre en tu propia máquina — todo lo descrito arriba (los
+commits, el historial, `git log`) vive localmente en la carpeta `.git/`
+de este proyecto, sin necesidad de internet. **GitHub** es un servicio en
+la nube que *hospeda* repositorios git para poder compartirlos: subir
+("push") el repositorio ahí es lo que permite que otra persona — como el
+entrevistador — lo clone, navegue el código, y sobre todo **revise el
+historial de commits** (que es justo lo que pide el enunciado: commits
+incrementales, no un solo volcado final).
+
+**Cómo publicar este repositorio en GitHub** (los pasos, en orden):
+
+1. Crear una cuenta en [github.com](https://github.com) si no se tiene.
+2. Crear un repositorio nuevo (botón "New repository") — con nombre, por
+   ejemplo, `consulthours`; **sin** inicializarlo con README ni
+   `.gitignore` (este proyecto ya los tiene, y si GitHub crea los suyos
+   los historiales chocan).
+3. Conectar el repositorio local con el remoto y subirlo:
+
+   ```bash
+   git remote add origin https://github.com/TU-USUARIO/consulthours.git
+   git branch -M main
+   git push -u origin main
+   ```
+
+4. Verificar en el navegador que en la pestaña "Commits" de GitHub se
+   ven todos los commits con sus mensajes — eso es lo que el revisor va
+   a leer para evaluar el proceso, no solo el resultado.
+5. Compartir la URL del repositorio con el entrevistador (si el
+   repositorio es privado, invitarlo como colaborador desde
+   Settings → Collaborators).
+
+**Qué ve el entrevistador al recibirlo:** el código completo con su
+estructura de carpetas, cada archivo de documentación (`README.md` se
+muestra automáticamente en la portada del repositorio), y el historial
+completo de commits — puede abrir cualquier commit y ver exactamente qué
+cambió y por qué, en el orden real en que se construyó.
+
+## EN: Git vs. GitHub — and how this project is delivered
+
+**Git and GitHub are not the same thing.** Git is the version-control
+system running on your own machine — everything described above (the
+commits, the history, `git log`) lives locally in this project's `.git/`
+folder, no internet required. **GitHub** is a cloud service that *hosts*
+git repositories so they can be shared: pushing the repository there is
+what lets someone else — like the interviewer — clone it, browse the
+code, and above all **review the commit history** (which is exactly what
+the exercise asks for: incremental commits, not one final dump).
+
+**How to publish this repository to GitHub** (the steps, in order):
+
+1. Create an account at github.com if you don't have one.
+2. Create a new repository ("New repository" button) — named, say,
+   `consulthours`; **without** initializing it with a README or
+   `.gitignore` (this project already has both, and if GitHub creates
+   its own the histories will clash).
+3. Connect the local repository to the remote and push it:
+
+   ```bash
+   git remote add origin https://github.com/YOUR-USER/consulthours.git
+   git branch -M main
+   git push -u origin main
+   ```
+
+4. Check in the browser that GitHub's "Commits" tab shows every commit
+   with its message — that's what the reviewer will read to evaluate
+   the process, not just the result.
+5. Share the repository URL with the interviewer (if the repository is
+   private, invite them as a collaborator via Settings → Collaborators).
+
+**What the interviewer sees on arrival:** the full code with its folder
+structure, every documentation file (`README.md` renders automatically
+on the repository's front page), and the complete commit history — they
+can open any commit and see exactly what changed and why, in the real
+order it was built.
