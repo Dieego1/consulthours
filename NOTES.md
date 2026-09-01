@@ -292,6 +292,21 @@ justificaciones.
   respuesta a "no confíes en el número que regresa el endpoint sin
   verificarlo": se verificó con un cálculo independiente, no repitiendo la
   misma lógica del backend.
+- El primer `database/seed.sql` que la IA generó (pensado para pegarse en
+  phpMyAdmin) usaba `SET FOREIGN_KEY_CHECKS = 0` antes de un `TRUNCATE`,
+  igual que hace `seed.php` por consola. Al probarlo en phpMyAdmin real
+  (no en la terminal, donde sí funcionaba) falló con
+  `#1701 - Cannot truncate a table referenced in a foreign key constraint`,
+  porque la casilla "Habilitar la revisión de las claves foráneas" de la
+  interfaz de phpMyAdmin ignora ese `SET` cuando está marcada. Fue un caso
+  claro de que **probar en la terminal no es lo mismo que probar en la
+  herramienta real que va a usar la otra persona**: el archivo pasaba
+  todas las pruebas por línea de comandos y aun así fallaba en el flujo
+  real del usuario. La corrección de fondo no fue "decirle a phpMyAdmin
+  que se comporte distinto", sino quitar la necesidad de `TRUNCATE` por
+  completo (el script ya empieza con `DROP DATABASE`, así que las tablas
+  siempre nacen vacías) — una solución más simple y que ya no depende de
+  ninguna configuración de la interfaz.
 
 ---
 
