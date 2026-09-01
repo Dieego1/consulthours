@@ -81,12 +81,45 @@ function initCardTilt() {
   });
 }
 
+/**
+ * ES: Los usuarios de prueba del login son clicables: rellenan el
+ *     formulario con su usuario/contraseña (tomados de data-username /
+ *     data-password) para no tener que copiarlos a mano. No envían el
+ *     formulario solos -- el clic en "Iniciar sesión" lo sigue dando la
+ *     persona, a propósito, para no ocultar el flujo normal de login.
+ * EN: The login screen's test users are clickable: they fill the form
+ *     with their username/password (read from data-username /
+ *     data-password) so nobody has to copy them by hand. They don't
+ *     submit the form on their own -- clicking "Iniciar sesión" is still
+ *     up to the person, on purpose, so the normal login flow stays visible.
+ */
+function initTestUserAutofill() {
+  function fillFrom(item) {
+    document.getElementById('login-username').value = item.dataset.username;
+    document.getElementById('login-password').value = item.dataset.password;
+    document.getElementById('login-username').focus();
+  }
+
+  document.querySelectorAll('.test-user').forEach((item) => {
+    item.addEventListener('click', () => fillFrom(item));
+    // ES: accesible por teclado (role="button" + tabindex, ver index.html)
+    // EN: keyboard-accessible (role="button" + tabindex, see index.html)
+    item.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        fillFrom(item);
+      }
+    });
+  });
+}
+
 async function init() {
   initTabs();
   initCardTilt();
   initRecordForm();
   initRecordsSearch();
   initSummaryUi();
+  initTestUserAutofill();
 
   initAuthUi({
     onLoginSuccess: showApp,

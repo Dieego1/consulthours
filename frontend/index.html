@@ -52,9 +52,31 @@
 
         <p id="login-error" class="form-error" hidden></p>
 
-        <p class="login-hint">
-          Usuarios de prueba: <code>admin/admin123</code>, <code>carla/carla2024</code>, <code>miguel/miguel!!</code>
-        </p>
+        <!-- ES: Usuarios de prueba, con usuario y contraseña rotulados por
+             separado (antes iban juntos como "admin/admin123" y no se
+             distinguía cuál era cuál) -- y clicables: al hacer clic se
+             autocompleta el formulario de arriba, no hay que copiarlos a mano.
+             EN: Test users, with username and password explicitly labeled
+             separately (before they were shown together as "admin/admin123"
+             with no clear way to tell which was which) -- and clickable:
+             clicking one autofills the form above, no need to copy them by hand. -->
+        <div class="login-hint">
+          <p class="login-hint-title">Usuarios de prueba (clic para autocompletar)</p>
+          <ul class="test-users" id="test-users">
+            <li class="test-user" data-username="admin" data-password="admin123" tabindex="0" role="button">
+              <span class="badge role-admin">Admin</span>
+              <span class="test-user-creds"><b>Usuario:</b> admin <b>Contraseña:</b> admin123</span>
+            </li>
+            <li class="test-user" data-username="carla" data-password="carla2024" tabindex="0" role="button">
+              <span class="badge">Consultor</span>
+              <span class="test-user-creds"><b>Usuario:</b> carla <b>Contraseña:</b> carla2024</span>
+            </li>
+            <li class="test-user" data-username="miguel" data-password="miguel!!" tabindex="0" role="button">
+              <span class="badge">Consultor</span>
+              <span class="test-user-creds"><b>Usuario:</b> miguel <b>Contraseña:</b> miguel!!</span>
+            </li>
+          </ul>
+        </div>
       </form>
     </div>
   </section>
