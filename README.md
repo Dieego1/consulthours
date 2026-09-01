@@ -11,6 +11,8 @@ regresa el API sea matemáticamente correcto.
 
 > Documentación completa (arquitectura, decisiones de negocio, seguridad):
 > ver [`docs/DOCUMENTACION.md`](docs/DOCUMENTACION.md) y [`NOTES.md`](NOTES.md).
+> Sobre por qué este proyecto usa Git y qué significa cada commit:
+> ver [`docs/GIT.md`](docs/GIT.md).
 
 ---
 
@@ -27,31 +29,40 @@ regresa el API sea matemáticamente correcto.
 
 ```
 PRUEBA TECNICA/
-├── index.php                    # Punto de entrada (redirige al frontend)
-├── database/
-│   ├── schema.sql                # Definición de tablas MySQL
-│   ├── seed_data.json             # Datos de prueba (fuente única de verdad)
-│   └── seed.php                   # Puebla MySQL a partir de seed_data.json
+├── .htaccess                     # Hace que "/" sirva public/index.php
+├── public/
+│   └── index.php                  # Punto de entrada (redirige al frontend)
+├── database/                      # Protegida por .htaccess (no accesible por URL)
+│   ├── schema.sql                  # Solo el esquema (tablas vacías)
+│   ├── seed.sql                    # Esquema + datos, listo para phpMyAdmin
+│   ├── seed_data.json               # Datos de prueba (fuente única de verdad)
+│   └── seed.php                    # Puebla MySQL a partir de seed_data.json (CLI)
 ├── backend/
-│   ├── config/database.php        # Conexión PDO a MySQL
-│   ├── includes/                  # auth.php, functions.php, bootstrap.php
+│   ├── config/database.php         # Conexión PDO a MySQL (protegida por .htaccess)
+│   ├── includes/                   # auth.php, functions.php, bootstrap.php (protegida)
 │   └── api/
-│       ├── auth/                  # login.php, logout.php, session.php
+│       ├── auth/                   # login.php, logout.php, session.php
 │       ├── clients.php
 │       ├── consultants.php
-│       ├── records.php            # listar/buscar (GET), crear (POST), borrar (DELETE)
-│       └── summary.php            # resumen mensual facturable por cliente
+│       ├── records.php             # listar/buscar (GET), crear (POST), borrar (DELETE)
+│       └── summary.php             # resumen mensual facturable por cliente
 ├── frontend/
-│   ├── index.html                 # SPA de una sola página
+│   ├── index.html                  # SPA de una sola página
 │   └── assets/
-│       ├── css/style.css          # layout, componentes
-│       └── css/animations.css     # animaciones y transiciones 3D
-│       └── js/                    # api.js, auth.js, records.js, summary.js, main.js
-├── scripts/
-│   └── verify_summary.py          # verifica /api/summary.php contra seed_data.json
+│       ├── css/style.css           # layout, componentes
+│       └── css/animations.css      # animaciones y transiciones 3D
+│       └── js/                     # api.js, auth.js, records.js, summary.js, main.js
+├── scripts/                       # Protegida por .htaccess (no accesible por URL)
+│   └── verify_summary.py           # verifica /api/summary.php contra seed_data.json
 ├── docs/DOCUMENTACION.md          # documentación técnica completa
 └── NOTES.md                       # hallazgos de seguridad, decisiones, uso de IA
 ```
+
+`public/` es la única carpeta pensada para abrirse por URL; `database/`,
+`scripts/`, `backend/config/` y `backend/includes/` tienen su propio
+`.htaccess` con `Require all denied` porque contienen cosas que nunca
+deberían descargarse directamente (contraseñas de prueba, el esquema, código
+fuente de Python) — ver `NOTES.md` §1.12.
 
 ## Cómo correrlo (XAMPP)
 
@@ -60,26 +71,35 @@ PRUEBA TECNICA/
    que solo necesitas iniciar **Apache** y **MySQL** desde el panel de
    control de XAMPP.
 
-2. **Crear la base de datos** (una sola vez), con phpMyAdmin o por consola:
+2. **Crear y poblar la base de datos** — dos formas, elige una:
+
+   **Opción A — phpMyAdmin (más fácil, un solo paso):**
+   abre phpMyAdmin (`http://localhost/phpmyadmin`), entra a la pestaña
+   **SQL**, pega todo el contenido de [`database/seed.sql`](database/seed.sql)
+   y dale a **Continuar**. Ese archivo crea la base, las tablas y los datos
+   de prueba en un solo paso (y es seguro volver a pegarlo/ejecutarlo
+   cuantas veces quieras: siempre empieza borrando `consulthours` si ya
+   existía).
+
+   **Opción B — línea de comandos:**
    ```bash
    C:\xampp\mysql\bin\mysql.exe -u root < database\schema.sql
-   ```
-
-3. **Sembrar los datos de prueba**:
-   ```bash
    C:\xampp\php\php.exe database\seed.php
    ```
-   Esto crea 3 usuarios, 4 clientes y 20 registros de horas de ejemplo
-   (incluye el caso de traslape de horario del 6 de agosto que pide el
-   ejercicio).
 
-4. **Abrir el programa** en el navegador:
+   Cualquiera de las dos opciones crea 3 usuarios, 4 clientes y 20 registros
+   de horas de ejemplo (incluye el caso de traslape de horario del 6 de
+   agosto que pide el ejercicio).
+
+3. **Abrir el programa** en el navegador:
    ```
    http://localhost/PRUEBA%20TECNICA/
    ```
-   (o directamente `http://localhost/PRUEBA%20TECNICA/frontend/index.html`)
+   (esto redirige automáticamente a `public/index.php`, que a su vez abre
+   `frontend/index.html`; también puedes visitar cualquiera de las dos URLs
+   directamente)
 
-5. **Usuarios de prueba** (contraseña real, no el hash — ver `database/seed_data.json`):
+4. **Usuarios de prueba** (contraseña real, no el hash — ver `database/seed_data.json`):
 
    | Usuario  | Contraseña  | Rol         |
    |----------|-------------|-------------|

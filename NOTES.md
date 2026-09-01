@@ -134,9 +134,44 @@ validación del navegador —`required`, `type="time"`— es solo UX, nunca la
 **Decisión de diseño:** en lugar de exponer el API con CORS permisivo
 (`Access-Control-Allow-Origin: *` + credenciales, una combinación insegura
 muy común en este tipo de ejercicios), el frontend y el backend se sirven
-desde el **mismo origen** (`index.php` → `frontend/index.html`, que llama a
-`../backend/api/...`). Esto elimina la necesidad de CORS por completo y
-reduce la superficie de ataque.
+desde el **mismo origen** (`public/index.php` → `frontend/index.html`, que
+llama a `../backend/api/...`). Esto elimina la necesidad de CORS por
+completo y reduce la superficie de ataque.
+
+### 1.12 Carpetas que no deberían ser accesibles por URL directa
+
+**Riesgo:** XAMPP sirve por HTTP **todo** lo que esté bajo `htdocs`, sin
+distinguir "código público" de "código interno". Antes de esta mitigación,
+cualquiera podía abrir `http://localhost/PRUEBA%20TECNICA/database/seed_data.json`
+y descargar las contraseñas de prueba en texto plano, o
+`.../database/schema.sql` y ver la estructura completa de la base de datos
+— se confirmó el problema con `curl` antes de corregirlo (ambos
+respondían `200`).
+
+**Mitigación:** cada carpeta que no debe abrirse directamente tiene su
+propio `.htaccess` con `Require all denied` (sintaxis de Apache 2.4, la
+que trae XAMPP): [`database/.htaccess`](database/.htaccess),
+[`scripts/.htaccess`](scripts/.htaccess),
+[`backend/includes/.htaccess`](backend/includes/.htaccess) y
+[`backend/config/.htaccess`](backend/config/.htaccess). Esto **no** afecta
+a que esos archivos sigan funcionando: PHP los sigue leyendo del disco con
+`require_once` con total normalidad (eso pasa por debajo del sistema de
+archivos, no por Apache); lo único que se bloquea es que el *navegador*
+los pida directamente por URL. Se volvió a probar con `curl` después de
+agregar los `.htaccess` (ahora responden `403`) y se corrió de nuevo
+`scripts/verify_summary.py` para confirmar que la aplicación real —que sí
+necesita leer esos archivos— seguía funcionando exactamente igual.
+
+Como consecuencia de esto, `public/` quedó como la única carpeta pensada
+para abrirse por URL: `index.php` se movió de la raíz del proyecto a
+`public/index.php` (con un `.htaccess` en la raíz que usa
+`DirectoryIndex public/index.php` para que la URL de siempre,
+`http://localhost/PRUEBA%20TECNICA/`, se siga abriendo exactamente igual
+que antes). El resto de las carpetas (`backend/`, `database/`, `scripts/`)
+quedan claramente separadas de lo público, aunque técnicamente todavía
+vivan bajo el mismo `htdocs` de XAMPP — la separación real (por ejemplo,
+un *virtual host* cuyo `DocumentRoot` apunte solo a `public/`) sería el
+siguiente paso en un entorno que no fuera XAMPP local.
 
 ---
 

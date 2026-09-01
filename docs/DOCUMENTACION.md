@@ -38,6 +38,11 @@ eres?) y **autorización** (¿qué puedes ver o hacer con lo que encontraste?).
 ## 2. Arquitectura general
 
 ```
+ http://localhost/PRUEBA TECNICA/   (.htaccess: DirectoryIndex public/index.php)
+              │
+              ▼
+     public/index.php  ──(redirect 302)──►  frontend/index.html
+                                                    │
 ┌─────────────────────┐         ┌──────────────────────────┐        ┌───────────────┐
 │  Navegador           │  fetch  │  Backend PHP (Apache)     │  PDO   │  MySQL         │
 │  frontend/index.html │ ──────► │  backend/api/*.php        │ ─────► │  consulthours  │
@@ -55,8 +60,15 @@ eres?) y **autorización** (¿qué puedes ver o hacer con lo que encontraste?).
 - **Todo se sirve desde el mismo origen** (`http://localhost/PRUEBA TECNICA/…`):
   no hay CORS que configurar ni cabeceras `Access-Control-Allow-Origin` que
   abrir, lo cual reduce la superficie de ataque (ver `NOTES.md` §1.11).
-- `index.php` en la raíz es solo un *redirect* a `frontend/index.html` (ver
-  §6.1) — es el "index principal" que pide el enunciado, en PHP.
+- `public/index.php` es solo un *redirect* a `frontend/index.html` (ver
+  §6.1) — es el "index principal" que pide el enunciado, en PHP. Vive en
+  `public/` (no en la raíz del proyecto) para que quede claro cuál es la
+  única carpeta pensada para abrirse por URL; un `.htaccess` en la raíz
+  (`DirectoryIndex public/index.php`) hace que la URL de siempre
+  (`http://localhost/PRUEBA%20TECNICA/`) se abra exactamente igual.
+- `database/`, `scripts/`, `backend/config/` y `backend/includes/` tienen
+  su propio `.htaccess` con `Require all denied`: nunca deben abrirse
+  directamente desde el navegador (ver `NOTES.md` §1.12).
 - El backend es **sin framework**: cada endpoint es un archivo PHP plano
   bajo `backend/api/`, con lógica compartida en `backend/includes/`.
 - El frontend es **JavaScript vanilla**: sin build step, sin npm, sin
@@ -95,9 +107,16 @@ Puntos importantes del diseño:
   columnas.
 
 `database/seed_data.json` es la **única fuente de datos de prueba**: tanto
-`database/seed.php` (puebla MySQL) como `scripts/verify_summary.py`
-(calcula lo que el API *debería* responder) leen de ese mismo archivo, para
-que nunca puedan desincronizarse entre sí.
+`database/seed.php` (puebla MySQL desde la línea de comandos) como
+`scripts/verify_summary.py` (calcula lo que el API *debería* responder)
+leen de ese mismo archivo, para que nunca puedan desincronizarse entre sí.
+`database/seed.sql` es un tercer camino —pensado para pegarse directo en
+la pestaña SQL de phpMyAdmin, sin necesitar la terminal— generado a mano a
+partir de esos mismos datos (mismos usuarios, mismos clientes, mismos 20
+registros, mismos hashes bcrypt reales de las contraseñas); no lo lee
+ningún script en tiempo real, así que si `seed_data.json` cambia,
+`seed.sql` se debe regenerar/actualizar a mano para que los tres caminos
+sigan de acuerdo.
 
 ## 4. Backend: API PHP
 
@@ -186,17 +205,35 @@ agrega automáticamente.
 
 ## 6. Frontend: SPA en JavaScript vanilla
 
-### 6.1 Enrutamiento de archivos y por qué `index.php` redirige
+### 6.1 Enrutamiento de archivos y por qué `public/index.php` redirige
 
 `frontend/index.html` referencia sus propios assets con rutas relativas a
 sí mismo (`assets/css/style.css`) y llama al backend con una ruta relativa
 hacia arriba (`../backend/api/...`, definida en `API_BASE` dentro de
 `frontend/assets/js/api.js`). Para que esas rutas relativas siempre
-resuelvan igual, `index.php` en la raíz **no incluye** el HTML del
-frontend (que rompería las rutas, porque el navegador seguiría viendo la
-URL de la raíz) — en vez de eso hace un `header('Location: frontend/index.html')`,
-así el navegador siempre termina en la URL real donde las rutas relativas
-tienen sentido.
+resuelvan igual, `public/index.php` **no incluye** el HTML del frontend
+(que rompería las rutas, porque el navegador seguiría viendo la URL de
+`public/`) — en vez de eso calcula la carpeta raíz del proyecto a partir
+de `dirname($_SERVER['SCRIPT_NAME'])` (la ruta real de este archivo en el
+servidor, no la URL que pidió el navegador) y hace un
+`header('Location: ' . $appRoot . '/frontend/index.html')` con esa ruta
+absoluta.
+
+Ese detalle —calcularla a partir de `SCRIPT_NAME` en vez de escribir
+`header('Location: ../frontend/index.html')` a mano— importa porque este
+archivo se puede alcanzar de dos formas distintas:
+
+1. Visitando `public/index.php` directamente.
+2. Visitando la raíz del proyecto (`http://localhost/PRUEBA%20TECNICA/`),
+   donde el `.htaccess` de la raíz (`DirectoryIndex public/index.php`)
+   hace que Apache sirva este mismo archivo **sin cambiar la URL que ve el
+   navegador**.
+
+Con una ruta relativa clásica, el mismo `header('Location: ../frontend/index.html')`
+daría un resultado distinto según por cuál de las dos vías se llegó (el
+navegador resuelve una `Location` relativa contra la URL que pidió, no
+contra la ruta real del archivo en disco) — con `SCRIPT_NAME` el resultado
+es siempre el mismo, sin importar cómo se llegó ahí.
 
 ### 6.2 Módulos JS (se cargan en este orden en `index.html`)
 
