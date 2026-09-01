@@ -1,0 +1,12 @@
+# Sistema operativo / editor
+Thumbs.db
+.DS_Store
+.vscode/
+.idea/
+
+# Nunca commitear un dump con datos reales; database/seed_data.json (datos
+# de prueba) sí se versiona a propósito, esto es solo por si alguien genera
+# un volcado local de la base de datos.
+*.sql.bak
+*.sqlite
+consulthours.sql
