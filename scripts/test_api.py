@@ -48,13 +48,27 @@ import urllib.request
 import http.cookiejar
 import urllib.parse
 import uuid
+from pathlib import Path
 
 try:
     sys.stdout.reconfigure(encoding="utf-8")
 except AttributeError:
     pass
 
-BASE_URL = "http://localhost/PRUEBA%20TECNICA/backend/api"
+# ES: Igual que en verify_summary.py: la URL se arma con el nombre REAL
+#     de la carpeta del proyecto en disco, no un nombre fijo -- quien
+#     clone este repositorio de GitHub va a tener una carpeta llamada
+#     "consulthours" (el nombre del repo), no "PRUEBA TECNICA" (el
+#     nombre que tenía durante el desarrollo). Así, esta suite corre sin
+#     tocar nada sin importar cómo se llame la carpeta.
+# EN: Same as verify_summary.py: the URL is built from the project
+#     folder's REAL name on disk, not a fixed string -- whoever clones
+#     this from GitHub will have a folder named "consulthours" (the
+#     repo's name), not "PRUEBA TECNICA" (the name it had during
+#     development). This way the suite runs untouched no matter what the
+#     folder is named.
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+BASE_URL = f"http://localhost/{urllib.parse.quote(PROJECT_ROOT.name)}/backend/api"
 
 USERS = {
     "admin": {"username": "admin", "password": "admin123", "id": 1},

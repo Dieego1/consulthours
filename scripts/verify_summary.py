@@ -50,8 +50,24 @@ import urllib.request
 from collections import defaultdict
 from pathlib import Path
 
-SEED_PATH = Path(__file__).resolve().parent.parent / "database" / "seed_data.json"
-DEFAULT_BASE_URL = "http://localhost/PRUEBA%20TECNICA/backend/api"
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+SEED_PATH = PROJECT_ROOT / "database" / "seed_data.json"
+
+# ES: La URL base se arma a partir del nombre REAL de la carpeta del
+#     proyecto en disco (PROJECT_ROOT.name), no de un nombre fijo. Antes
+#     decia "PRUEBA%20TECNICA" a mano, que era el nombre de la carpeta
+#     durante el desarrollo -- pero quien clone este repositorio de
+#     GitHub va a tener una carpeta llamada "consulthours" (el nombre del
+#     repo), no esa. Con esto, el script funciona sin tocar nada sin
+#     importar cómo se llame la carpeta en la máquina de quien lo corra.
+# EN: The base URL is built from the project folder's REAL name on disk
+#     (PROJECT_ROOT.name), not a fixed string. It used to hardcode
+#     "PRUEBA%20TECNICA", which was this folder's name during
+#     development -- but whoever clones this from GitHub will have a
+#     folder named "consulthours" (the repo's name), not that one. This
+#     way the script works untouched no matter what the folder is named
+#     on whoever's machine runs it.
+DEFAULT_BASE_URL = f"http://localhost/{urllib.parse.quote(PROJECT_ROOT.name)}/backend/api"
 
 # ES: Evita caracteres corruptos ("mojibake") en la consola de Windows,
 #     cuya página de códigos por defecto no siempre es UTF-8.

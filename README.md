@@ -80,10 +80,22 @@ fuente de Python) — ver `NOTES.md` §1.12.
 
 ## Cómo correrlo (XAMPP)
 
-1. **Copia el proyecto dentro de `htdocs`** (si no está ya ahí). Con XAMPP
-   corriendo, este proyecto ya vive en `C:\xampp\htdocs\PRUEBA TECNICA`, así
-   que solo necesitas iniciar **Apache** y **MySQL** desde el panel de
-   control de XAMPP.
+> **Si lo acabas de clonar desde GitHub:** `git clone` va a crear una
+> carpeta llamada `consulthours` (el nombre del repositorio) dentro de
+> `htdocs`. Eso está bien — el proyecto **no depende de un nombre de
+> carpeta fijo**: tanto las rutas del frontend/backend como
+> `scripts/verify_summary.py` y `scripts/test_api.py` detectan solas el
+> nombre real de la carpeta donde viven y arman la URL correcta a partir
+> de eso. Puedes dejarla como `consulthours`, renombrarla, o moverla —
+> nada se rompe.
+
+1. **Clona (o copia) el proyecto dentro de `htdocs`.** Por ejemplo:
+   ```bash
+   cd C:\xampp\htdocs
+   git clone https://github.com/Dieego1/consulthours.git
+   ```
+   Con XAMPP corriendo, solo necesitas iniciar **Apache** y **MySQL** desde
+   su panel de control.
 
 2. **Crear y poblar la base de datos** — dos formas, elige una:
 
@@ -105,9 +117,11 @@ fuente de Python) — ver `NOTES.md` §1.12.
    de horas de ejemplo (incluye el caso de traslape de horario del 6 de
    agosto que pide el ejercicio).
 
-3. **Abrir el programa** en el navegador:
+3. **Abrir el programa** en el navegador — la URL depende del nombre de
+   la carpeta donde haya quedado el proyecto dentro de `htdocs`:
    ```
-   http://localhost/PRUEBA%20TECNICA/
+   http://localhost/consulthours/      (si viene de un git clone normal)
+   http://localhost/PRUEBA%20TECNICA/  (si es esta copia de desarrollo)
    ```
    (esto redirige automáticamente a `public/index.php`, que a su vez abre
    `frontend/index.html`; también puedes visitar cualquiera de las dos URLs
