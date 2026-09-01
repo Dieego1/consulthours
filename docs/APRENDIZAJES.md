@@ -32,7 +32,7 @@ another?".
 | **HTML5** | Estructura semántica de la única página (`frontend/index.html`). | — |
 | **CSS3** | Layout, componentes visuales, y **todas** las animaciones 3D (`style.css`, `animations.css`). | `transform`/`perspective`/`@keyframes` nativos alcanzan para animaciones 3D fluidas sin ninguna librería — una dependencia externa aquí sería puro riesgo sin beneficio. |
 | **Python 3** | Script de verificación independiente (`scripts/verify_summary.py`) que recalcula el resumen mensual y lo compara contra el API real. | **A propósito un lenguaje distinto al del backend.** Si el script de verificación estuviera en PHP y compartiera, aunque fuera sin querer, una función con `summary.php`, un bug en esa función podría "verse bien" en ambos lados. Usar Python obliga a que el cálculo se escriba dos veces, de forma independiente, en dos lenguajes distintos — así una coincidencia entre ambos sí es evidencia real de que el número es correcto. |
-| **Bash / PowerShell** | Solo para *probar* el sistema durante el desarrollo (`curl` contra los endpoints, `mysql` por consola) — no son parte de la aplicación entregada. | Verificar con peticiones HTTP reales, no solo leyendo el código, es la única forma de confirmar que la autorización realmente bloquea lo que dice bloquear (ver §7 más abajo). |
+| **Bash / PowerShell** | Solo para *probar* el sistema durante el desarrollo (`curl` contra los endpoints, `mysql` por consola) — no son parte de la aplicación entregada. | Verificar con peticiones HTTP reales, no solo leyendo el código, es la única forma de confirmar que la autorización realmente bloquea lo que dice bloquear (ver §8 más abajo). |
 | **Apache (`.htaccess`)** | Control de acceso a nivel de servidor: `DirectoryIndex` en la raíz, `Require all denied` en `database/`, `scripts/`, `backend/config/`, `backend/includes/`. | Seguridad en capas: aunque la aplicación esté bien escrita, si el *servidor* sirve cualquier archivo bajo `htdocs` sin distinción, un archivo como `seed_data.json` (con contraseñas de prueba) queda expuesto igual. Esto se corrigió a nivel de servidor, no de aplicación, porque es donde vive el problema. |
 | **Git** | Control de versiones de todo el código. | Ver [`docs/GIT.md`](GIT.md) — sección dedicada completa, incluida la lista de cada commit. |
 
@@ -68,7 +68,70 @@ another?".
 - **Índices pensados para las consultas reales:** `idx_consultant_date (consultant_id, work_date)` existe porque tanto la detección de traslapes (`mark_overlaps()`) como el resumen mensual filtran exactamente por esas dos columnas — un índice que nadie usa es solo peso muerto.
 - **Una sola fuente de verdad para los datos de prueba:** `database/seed_data.json` alimenta tanto `seed.php` (MySQL por consola) como `scripts/verify_summary.py` (el cálculo esperado) — si vivieran por separado, podrían desincronizarse sin que nadie lo note. `database/seed.sql` (para phpMyAdmin) es la excepción deliberada: no lo lee ningún script, así que si `seed_data.json` cambia, hay que actualizarlo a mano (ver `docs/DOCUMENTACION.md` §3).
 
-## 5. ES: Frontend / EN: Frontend
+## 5. ES: Caso real — el error de base de datos que tuve y cómo se corrigió
+
+Este es un caso concreto que pasó en la práctica, no un riesgo teórico —
+vale la pena poder contarlo en una entrevista tal cual, con el mensaje de
+error real incluido.
+
+**Qué pasó:** siguiendo las instrucciones de `README.md`, pegué el
+contenido de `database/seed.sql` en la pestaña **SQL** de phpMyAdmin y le
+di a "Continuar". phpMyAdmin regresó este error:
+
+```
+#1701 - Cannot truncate a table referenced in a foreign key constraint
+(`consulthours`.`time_records`, CONSTRAINT `fk_tr_consultant`
+FOREIGN KEY (`consultant_id`) REFERENCES `consulthours`.`users` (`id`))
+```
+
+La base de datos se quedó a medias: las tablas se crearon, pero
+`users` terminó vacía — y por eso el login fallaba después con
+"Usuario o contraseña incorrectos" aunque las credenciales fueran
+correctas.
+
+**Por qué pasó (la causa real, no el síntoma):** el script traía
+`SET FOREIGN_KEY_CHECKS = 0;` justo antes de los `TRUNCATE TABLE`, para
+poder vaciar `time_records`, `users` y `clients` sin que las llaves
+foráneas entre ellas lo bloquearan (esto es exactamente lo que hace
+`database/seed.php` cuando se corre por línea de comandos, y ahí sí
+funciona). El problema es que la interfaz de phpMyAdmin tiene su propia
+casilla, **"Habilitar la revisión de las claves foráneas"**, marcada por
+defecto — y esa casilla vuelve a forzar `FOREIGN_KEY_CHECKS = 1` sin
+importar lo que diga el script que se está ejecutando. En MySQL/InnoDB,
+`TRUNCATE` sobre una tabla referenciada por una llave foránea falla con
+las llaves activas **aunque la tabla que la referencia esté vacía** — no
+es un chequeo de datos, es un chequeo de que existe la relación en el
+esquema.
+
+**Cómo se diagnosticó:** en vez de adivinar, se reprodujo el error
+exacto de dos formas — probando el mismo SQL por línea de comandos
+(`mysql -u root < seed.sql`, donde sí funcionaba) y forzando
+`SET FOREIGN_KEY_CHECKS=1` manualmente antes de correrlo por consola
+(ahí sí volvió a fallar igual que en phpMyAdmin). Eso confirmó que el
+problema no era el contenido del SQL en sí, sino que algo fuera del
+script estaba re-activando las llaves foráneas.
+
+**Cómo se corrigió:** en vez de intentar "convencer" a phpMyAdmin de
+respetar el `SET` (frágil — dependería de que cada quien recuerde
+desmarcar una casilla), se quitó la necesidad de `TRUNCATE` por
+completo. El script ya empezaba con `DROP DATABASE IF EXISTS consulthours;`
+seguido de `CREATE DATABASE` + `CREATE TABLE`, así que las tablas
+**siempre nacen vacías** — no hacía falta vaciarlas de nuevo. Se
+verificó la corrección de la forma más estricta posible: forzando
+`SET FOREIGN_KEY_CHECKS=1` durante todo el script (el peor caso posible)
+y también reimportándolo encima de una base ya poblada — ambas veces
+terminó con los 3 usuarios, 4 clientes y 20 registros esperados, y
+`scripts/verify_summary.py` siguió confirmando que los números cuadraban.
+
+**El aprendizaje que vale la pena quedarse:** un script de base de datos
+no está "probado" solo porque corrió una vez en una terminal. La
+herramienta real que va a usar la otra persona (en este caso, la interfaz
+de phpMyAdmin con sus propias casillas y comportamientos) puede cambiar
+el resultado — y la solución más robusta casi siempre es **quitarle a la
+herramienta la oportunidad de interferir**, no pelear contra su
+configuración por defecto.
+
+## 6. ES: Frontend / EN: Frontend
 
 - **SPA sin framework:** cambiar de pestaña (`main.js::initTabs`) es solo `classList.toggle('active', ...)` sobre los paneles que ya están en el DOM — no hace falta un router ni un framework de componentes para dos vistas.
 - **`fetch` + `async/await`, no callbacks:** `frontend/assets/js/api.js` centraliza toda petición HTTP en una sola función (`apiRequest`), así que agregar el header CSRF o manejar errores de red se hace en un solo lugar para los diez endpoints que se consumen.
@@ -77,19 +140,19 @@ another?".
 - **Accesibilidad no es opcional:** `@media (prefers-reduced-motion: reduce)` en `animations.css` apaga las animaciones para quien lo configuró así en su sistema operativo — una decisión de diseño, no un olvido.
 - **Defensa en profundidad también en el cliente:** `escapeHtml()` se usa aunque el backend ya valide — el frontend nunca asume que "ya se validó en otro lado".
 
-## 6. ES: Control de versiones / EN: Version control
+## 7. ES: Control de versiones / EN: Version control
 
 Cubierto a fondo, con la lista completa de cada commit y por qué se hizo en ese orden, en **[`docs/GIT.md`](GIT.md)**. La idea central: git no es una función del programa (la app corre igual sin `.git/`), es la herramienta con la que se **entrega el proceso de construcción**, commit por commit, en vez de un solo volcado final — que es exactamente lo que pide el enunciado del ejercicio.
 
 ---
 
-## 7. ES: Aprendizajes de trabajar con una IA (Claude Code / Claude)
+## 8. ES: Aprendizajes de trabajar con una IA (Claude Code / Claude)
 
 Esta sección es distinta a las anteriores: no es sobre el código, sino
 sobre **el proceso de construirlo con un asistente de IA** como
 colaborador activo, no como "autocompletado".
 
-### 7.1 La IA propone rápido; verificar sigue siendo trabajo humano de dirigir
+### 8.1 La IA propone rápido; verificar sigue siendo trabajo humano de dirigir
 
 Cada pieza de este proyecto se probó de verdad antes de darse por buena —
 no "se ve bien en el código", sino ejecutada:
@@ -109,10 +172,9 @@ Esto no habría pasado solo, la IA no ejecuta pruebas por iniciativa propia
 salvo que se le pida — pedirlo explícitamente ("pruébalo de verdad, no
 solo escribas el código") fue lo que lo activó.
 
-### 7.2 Encontrar errores de la IA por evidencia, no por sospecha
+### 8.2 Encontrar errores de la IA por evidencia, no por sospecha
 
-Dos ejemplos concretos de esta misma sesión, documentados también en
-`NOTES.md` §3:
+Dos ejemplos concretos de esta misma sesión:
 
 1. **El gráfico de barras del resumen** se veía con las tres barras casi
    idénticas en una captura de pantalla, aunque representaban 100%, 54% y
@@ -120,17 +182,13 @@ Dos ejemplos concretos de esta misma sesión, documentados también en
    contra lo que se veía en la imagen — la lógica JS estaba bien, el
    problema era puramente de contraste de color en el CSS.
 2. **El script `database/seed.sql`** funcionaba perfecto por línea de
-   comandos, pero falló en phpMyAdmin real con
-   `#1701 - Cannot truncate a table referenced in a foreign key constraint`,
-   porque la casilla "Habilitar la revisión de las claves foráneas" de esa
-   interfaz ignora el `SET FOREIGN_KEY_CHECKS=0` que el script traía. Este
-   fue el aprendizaje más concreto de toda la sesión: **"funciona en mi
-   prueba" y "funciona en la herramienta real que va a usar la otra
-   persona" no son la misma afirmación.** La corrección no fue un parche
-   sobre el síntoma, sino eliminar la necesidad de `TRUNCATE` desde la
-   raíz del script.
+   comandos, pero falló al usarlo de verdad en phpMyAdmin — ver el caso
+   completo, con el mensaje de error real y cómo se corrigió, en **§5 de
+   este mismo documento**. Fue el aprendizaje más concreto de toda la
+   sesión: **"funciona en mi prueba" y "funciona en la herramienta real
+   que va a usar la otra persona" no son la misma afirmación.**
 
-### 7.3 Pedir explícitamente lo que no es "solo código"
+### 8.3 Pedir explícitamente lo que no es "solo código"
 
 Instrucciones que cambiaron el resultado, en orden de cuándo se pidieron:
 
@@ -147,7 +205,7 @@ Instrucciones que cambiaron el resultado, en orden de cuándo se pidieron:
   (`schema.sql`) con el formato bilingüe antiguo, que se corrigió al
   momento.
 
-### 7.4 Las decisiones de negocio abiertas no las decide la IA sola
+### 8.4 Las decisiones de negocio abiertas no las decide la IA sola
 
 El enunciado deja dos reglas de negocio abiertas a propósito (traslapes de
 horario, visibilidad del resumen entre consultores). La IA propuso una
@@ -160,7 +218,7 @@ cada una tiene sentido, no solo repetir el texto.
 
 ---
 
-## 8. ES: Checklist — qué se puede defender en una entrevista / EN: Interview-readiness checklist
+## 9. ES: Checklist — qué se puede defender en una entrevista / EN: Interview-readiness checklist
 
 | Si preguntan... | La respuesta está en... |
 |---|---|
@@ -172,3 +230,4 @@ cada una tiene sentido, no solo repetir el texto.
 | "¿Cómo protegiste contra CSRF/XSS/inyección SQL?" | `NOTES.md` §1.3, §1.6, §1.9 |
 | "¿Por qué está todo en `public/`, `database/`, `backend/`...?" | `docs/DOCUMENTACION.md` §2 + `NOTES.md` §1.12 |
 | "¿Por qué tantos commits chicos en vez de uno?" | `docs/GIT.md` completo |
+| "Cuéntame de un bug real que hayas resuelto" | §5 de este documento — el error `#1701` de phpMyAdmin, causa raíz y corrección, no solo el síntoma |
