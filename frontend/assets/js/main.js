@@ -41,6 +41,28 @@ function initTabs() {
       p.classList.toggle('active', p.id === `tab-${tabName}`);
     });
     positionIndicator(buttons.find((b) => b.dataset.tab === tabName));
+
+    // ES: Refresca los datos del panel que se muestra. Antes, cambiar de
+    //     pestaña no volvía a pedir nada: si creabas un registro en
+    //     "Registros" y luego entrabas a "Resumen mensual" sin tocar el
+    //     selector de mes (que ya decía el mes correcto, así que no
+    //     disparaba su evento "change"), veías los números de la última
+    //     vez que se cargó esa pestaña, no los actuales. El guard
+    //     `if (state.user)` evita que esto dispare una petición al API
+    //     antes de haber iniciado sesión (esta función también se llama
+    //     una vez al cargar la página, antes del login).
+    // EN: Refreshes the panel being shown. Before, switching tabs never
+    //     re-fetched anything: if you created a record in "Registros"
+    //     and then opened "Resumen mensual" without touching the month
+    //     picker (which already showed the right month, so its "change"
+    //     event never fired), you'd see numbers from the last time that
+    //     tab loaded, not the current ones. The `if (state.user)` guard
+    //     stops this from firing a request before login (this function
+    //     also runs once on page load, before anyone has logged in).
+    if (state.user) {
+      if (tabName === 'records') loadRecords();
+      if (tabName === 'summary') loadSummary();
+    }
   }
 
   buttons.forEach((btn) => btn.addEventListener('click', () => activate(btn.dataset.tab)));

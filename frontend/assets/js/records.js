@@ -126,6 +126,13 @@ async function deleteRecord(id) {
     await api.delete(`/records.php?id=${encodeURIComponent(id)}`);
     showToast('Registro borrado.', 'ok');
     loadRecords();
+    // ES: refresca tambien el resumen mensual -- si el registro borrado
+    //     era facturable, el total ya cambio, aunque el usuario se quede
+    //     en esta misma pestana sin volver a entrar a "Resumen mensual".
+    // EN: also refresh the monthly summary -- if the deleted record was
+    //     billable, the total already changed, even if the user stays on
+    //     this same tab without revisiting "Resumen mensual".
+    loadSummary();
   } catch (err) {
     showToast(err.message, 'error');
   }
@@ -167,6 +174,7 @@ function initRecordForm() {
       form.reset();
       form.hidden = true;
       loadRecords();
+      loadSummary(); // ES: mismo motivo que en deleteRecord() / EN: same reason as in deleteRecord()
     } catch (err) {
       errorEl.textContent = err.message;
       errorEl.hidden = false;
