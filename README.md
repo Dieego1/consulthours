@@ -12,7 +12,9 @@ regresa el API sea matemáticamente correcto.
 > Documentación completa (arquitectura, decisiones de negocio, seguridad):
 > ver [`docs/DOCUMENTACION.md`](docs/DOCUMENTACION.md) y [`NOTES.md`](NOTES.md).
 > Sobre por qué este proyecto usa Git y qué significa cada commit:
-> ver [`docs/GIT.md`](docs/GIT.md).
+> ver [`docs/GIT.md`](docs/GIT.md). Aprendizajes del proyecto (lenguajes,
+> conceptos, trabajar con IA), listos para defender en una entrevista:
+> ver [`docs/APRENDIZAJES.md`](docs/APRENDIZAJES.md).
 
 ---
 

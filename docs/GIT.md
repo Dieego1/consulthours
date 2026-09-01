@@ -88,17 +88,34 @@ intención para quien no lea español.
 | 9 | `feat(frontend): estructura HTML y estilos con animaciones 3D`                   | The static shell of the UI: `index.html`, `style.css`, `animations.css` — structure and visuals before behavior. |
 | 10 | `feat(frontend): logica de la SPA en JavaScript vanilla`                        | The JS that makes the HTML from commit 9 actually work: `api.js`, `auth.js`, `records.js`, `summary.js`, `main.js`. |
 | 11 | `feat: script de verificacion independiente del resumen mensual (Python)`        | `scripts/verify_summary.py` — built *after* the summary endpoint existed, specifically to check it against `seed_data.json` rather than trust it blindly (as the exercise asks). |
-| 12 | `docs: notas de seguridad, decisiones de negocio y documentacion tecnica`        | `NOTES.md` and `docs/DOCUMENTACION.md`, written last, once there was a finished, tested system to document truthfully instead of documenting intentions. |
+| 12 | `docs: notas de seguridad, decisiones de negocio y documentacion tecnica`        | `NOTES.md` and `docs/DOCUMENTACION.md`, first version, once there was a finished, tested system to document truthfully instead of documenting intentions. |
 
-> ES: Este proyecto siguió creciendo después de esta tabla (reorganización
-> de carpetas, protección de archivos internos, el SQL para phpMyAdmin,
-> este mismo documento). Para la lista siempre-actualizada, no confíes en
-> esta tabla — corre `git log --oneline` directamente.
+### ES: Segunda sesión de trabajo — reorganización, phpMyAdmin y documentación adicional
+### EN: Second working session — reorganization, phpMyAdmin, and further documentation
+
+Estos commits llegaron después de una revisión pidiendo mover archivos,
+dar una vía de importación por phpMyAdmin, y documentar más a fondo.
+
+These commits came after a review round asking to move files around,
+provide a phpMyAdmin import path, and document things more thoroughly.
+
+| # | Commit (mensaje corto, tal como aparece en `git log`) | EN — what it did and why |
+|---|-----------------------------------------------------------|---------------------------|
+| 13 | `docs: estandariza comentarios bilingues ES/EN en CSS y HTML` | `animations.css`, `style.css` and `index.html` used a "Spanish / English" one-line format instead of the `ES: ... / EN: ...` label convention used everywhere else — standardized so a single text search (`grep "ES:"`/`"EN:"`) can verify bilingual coverage across the *entire* project the same way. |
+| 14 | `feat: mueve index.php a public/ y protege carpetas internas` | Moved the entry point from the project root into `public/index.php` (a root `.htaccess` with `DirectoryIndex public/index.php` keeps the same URL working). Also added `Require all denied` to `database/`, `scripts/`, `backend/config/`, `backend/includes/` after confirming with `curl` that `database/seed_data.json` (plaintext test passwords) was publicly downloadable — `200` before, `403` after. |
+| 15 | `feat(database): agrega seed.sql para importar directo en phpMyAdmin` | Added a pure-SQL dump (schema + data, passwords already bcrypt-hashed) for pasting directly into phpMyAdmin's SQL tab, as an alternative to the command-line path. |
+| 16 | `docs: actualiza README y documentacion tecnica con la nueva estructura` | Updated `README.md`, `NOTES.md` and `docs/DOCUMENTACION.md` to reflect the `public/` move, the `seed.sql` option, and the new `.htaccess` protections. |
+| 17 | `docs: explica en espanol e ingles por que este proyecto usa git` | Added this file (`docs/GIT.md`) — git is a delivery/versioning tool, not a feature of the running app, and the exercise explicitly asks for incremental commits. |
+| 18 | `fix: estandariza comentarios bilingues en schema.sql` | Found during a "is the code actually clean?" audit: `database/schema.sql` still used the old bilingual format from before commit 13 standardized the rest of the project. Fixed for full consistency. |
+| 19 | `docs: documenta el bug de phpMyAdmin/TRUNCATE en el uso de IA` | Added a concrete example to `NOTES.md` §3 (AI usage): the first `seed.sql` worked from the command line but failed in real phpMyAdmin because its "enable foreign key checks" checkbox overrides a plain `SET FOREIGN_KEY_CHECKS=0`. Fixed by removing the need for `TRUNCATE` entirely rather than patching around the checkbox. |
+| 20 | `docs: agrega documentacion de aprendizajes del proyecto` | Added `docs/APRENDIZAJES.md`: what each language/tool was for and why, the security/architecture/database/frontend concepts this project demonstrates, and a dedicated section on what working with an AI assistant (Claude Code) on this project actually looked like. |
+| 21 | `docs: completa la tabla de commits en GIT.md` | This same update — extends the commit table above to cover the full history instead of stopping at #12. |
+
+> ES: Para lo que venga después de este commit, esta tabla ya no alcanza
+> — corre `git log --oneline` para la lista siempre-actualizada.
 >
-> EN: This project kept growing after this table (folder reorganization,
-> protecting internal files, the phpMyAdmin SQL file, this very document).
-> For the always-current list, don't trust this table — run
-> `git log --oneline` directly.
+> EN: For anything after this commit, this table stops being enough —
+> run `git log --oneline` for the always-current list.
 
 ## ES: Por qué el orden importa / EN: Why the order matters
 
