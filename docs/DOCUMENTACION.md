@@ -14,7 +14,7 @@ instalación rápida, ver [`README.md`](../README.md).
 5. [Seguridad: autenticación y autorización](#5-seguridad-autenticación-y-autorización)
 6. [Frontend: SPA en JavaScript vanilla](#6-frontend-spa-en-javascript-vanilla)
 7. [Animaciones 3D](#7-animaciones-3d)
-8. [Script de verificación en Python](#8-script-de-verificación-en-python)
+8. [Verificación en Python y automatización](#8-verificación-en-python-y-automatización)
 9. [Flujo completo de una petición](#9-flujo-completo-de-una-petición)
 10. [Cómo extender el sistema](#10-cómo-extender-el-sistema)
 
@@ -76,7 +76,7 @@ eres?) y **autorización** (¿qué puedes ver o hacer con lo que encontraste?).
 
 ## 3. Modelo de datos
 
-Tres tablas en MySQL (`database/schema.sql`):
+Cuatro tablas en MySQL (`database/schema.sql`):
 
 ```
 users                          clients                    time_records
@@ -91,7 +91,20 @@ created_at                                                    hours (derivado de
                                                                description
                                                                billable  (0/1)
                                                                created_at
+
+login_attempts
+──────────────
+id             PK
+username        (sin FK a users -- se registra igual aunque el usuario no exista)
+ip_address
+attempted_at
 ```
+
+`login_attempts` no tiene llave foránea hacia `users` a propósito: un
+intento de login con un nombre de usuario que no existe también debe
+contar para el bloqueo (si no, alguien podría usarlo para "adivinar" qué
+usuarios existen probando cuáles nunca se bloquean). Ver
+`backend/api/auth/login.php` y `NOTES.md` §1.7.
 
 Puntos importantes del diseño:
 
@@ -258,6 +271,29 @@ real está en el backend (§5); ocultar un botón en el navegador no reemplaza
 la verificación de permisos en el servidor, que es la que de verdad se
 prueba en `NOTES.md` §4.
 
+### 6.4 Usuarios de prueba clicables en el login
+
+`frontend/index.html` lista los 3 usuarios de prueba con "Usuario:" y
+"Contraseña:" rotulados por separado (antes iban juntos como
+`admin/admin123`, sin distinguir cuál era cuál). Cada fila (`.test-user`,
+con `role="button"` y `tabindex="0"` para que también funcione con
+teclado) tiene `data-username`/`data-password`; `initTestUserAutofill()`
+en `main.js` escucha clic y `Enter`/`Espacio`, y solo llena los campos del
+formulario — **no** lo envía sola, a propósito, para no ocultarle a quien
+prueba el sistema el flujo normal de login.
+
+### 6.5 Descubribilidad del scroll horizontal en la tabla
+
+Encontrado probando el layout a 375px de ancho (un iPhone SE, vía Chrome
+DevTools Protocol en modo headless): la tabla de registros sí se podía
+desplazar horizontalmente (`overflow-x: auto` en `.table-scroll` ya
+funcionaba), pero nada en pantalla lo indicaba — se veía simplemente
+cortada a la derecha. `updateRecordsScrollFade()` en `records.js` muestra
+un degradado (`.scroll-fade-right` en `style.css`) en el borde derecho de
+la tabla cuando hay más columnas de las que caben, y lo oculta cuando el
+scroll ya llegó al final — se actualiza en `scroll`, en `resize`, y cada
+vez que se recarga la tabla.
+
 ## 7. Animaciones 3D
 
 Todas las animaciones viven en `frontend/assets/css/animations.css` y usan
@@ -283,13 +319,17 @@ sienta fluida incluso con muchas filas en la tabla:
 - **Accesibilidad**: `@media (prefers-reduced-motion: reduce)` reduce
   todas las duraciones a ~0 para quien lo tenga configurado en su sistema.
 
-## 8. Script de verificación en Python
+## 8. Verificación en Python y automatización
 
-`scripts/verify_summary.py` (sin dependencias externas, solo librería
-estándar) existe porque el enunciado pide explícitamente **no confiar** en
-el número que regresa `/api/summary.php` sin comprobarlo primero.
+Tres scripts en `scripts/` (protegida por `.htaccess`, no accesible por
+URL — ver §2), todos sin dependencias externas, solo librería estándar de
+Python.
 
-Cómo funciona:
+### 8.1 `scripts/verify_summary.py`
+
+Existe porque el enunciado pide explícitamente **no confiar** en el
+número que regresa `/api/summary.php` sin comprobarlo primero. Cómo
+funciona:
 
 1. Lee `database/seed_data.json` (la misma fuente que usó `seed.php` para
    poblar MySQL).
@@ -301,10 +341,45 @@ Cómo funciona:
 4. Compara ambos números y marca `OK` / `MISMATCH` por cada
    cliente/mes/consultor.
 
-Se ejecuta con `python scripts/verify_summary.py` (requiere que Apache y
-MySQL de XAMPP estén corriendo y que `database/seed.php` ya se haya
-ejecutado). El resultado íntegro de la última corrida está en
-`NOTES.md` §4.
+Se ejecuta con `python scripts/verify_summary.py`. El resultado íntegro de
+la última corrida está en `NOTES.md` §4.
+
+### 8.2 `scripts/test_api.py`
+
+Suite de pruebas automatizadas (`unittest` de la librería estándar) que
+formaliza como pruebas repetibles todo lo que se verificó a mano con
+`curl` durante el desarrollo. 15 pruebas en 6 grupos:
+
+| Clase | Qué cubre |
+|---|---|
+| `AuthenticationTests` | Sin sesión → 401; contraseña incorrecta → 401; login correcto nunca devuelve el hash |
+| `OwnershipAndAuthorizationTests` | El bug de suplantación del punto 4 del enunciado; borrar registro ajeno → 403; borrar el propio → 200; admin borra cualquiera; un consultor nunca ve registros de otro aunque lo pida por query string |
+| `SummaryVisibilityTests` | La decisión de negocio de `NOTES.md` §2.2, verificada contra el API real |
+| `OverlapDetectionTests` | El ejemplo real del 6 de agosto (`NOTES.md` §2.1); crear un traslape avisa pero no bloquea |
+| `SqlInjectionTests` | La búsqueda de texto no se rompe ni filtra nada con metacaracteres SQL |
+| `LoginRateLimitTests` | El bloqueo por intentos fallidos (§8.3 de este documento) — usa un usuario inventado para no bloquear ninguna cuenta real de la demo |
+
+Cada prueba que crea datos de prueba los limpia en su propio `tearDown`
+(vía `DELETE` como admin), así que correrla no deja basura en la base.
+Se ejecuta con `python scripts/test_api.py -v`.
+
+### 8.3 `scripts/check_all.sh` / `scripts/check_all.ps1`
+
+Un solo comando (una versión para Bash, otra para PowerShell, mismo
+comportamiento) que corre, en orden: `php -l` sobre cada archivo PHP,
+`node --check` sobre cada archivo JS, `test_api.py`, y
+`verify_summary.py`. Termina con código de salida `0` solo si las cuatro
+cosas pasaron.
+
+Nota de implementación en la versión PowerShell: los dos pasos de Python
+no usan la redirección nativa `2>&1` de PowerShell 5.1, sino
+`cmd /c "... > archivo 2>&1"`. La razón: PowerShell 5.1 envuelve cada
+línea de `stderr` de un `.exe` nativo en un objeto `NativeCommandError`
+al redirigirla con `2>&1`, y `unittest` (`test_api.py`) escribe su
+resultado en `stderr` por diseño — sin este rodeo, el script marcaba
+"falló" incluso cuando las 15 pruebas pasaban. Ver el caso completo en
+`docs/APRENDIZAJES.md` §5.2 (un problema del mismo tipo: dos herramientas
+que no se entendían entre sí de la forma esperada).
 
 ## 9. Flujo completo de una petición
 

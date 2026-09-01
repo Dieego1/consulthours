@@ -175,8 +175,19 @@
         <p id="record-form-error" class="form-error" hidden></p>
       </form>
 
+      <!-- ES: table-panel necesita position:relative para anclar el
+           degradado de "hay más columnas, desliza" (.scroll-fade-right)
+           que records.js muestra/oculta según el scroll real de la
+           tabla -- encontrado probando el layout a 375px de ancho,
+           donde la tabla se recorta sin ninguna pista de que se puede
+           desplazar.
+           EN: table-panel needs position:relative to anchor the "more
+           columns, swipe" gradient (.scroll-fade-right) that records.js
+           shows/hides based on the table's actual scroll position --
+           found by testing the layout at a 375px width, where the
+           table got cut off with no hint that it could be scrolled. -->
       <div class="panel card-3d table-panel">
-        <div class="table-scroll">
+        <div class="table-scroll" id="records-scroll">
           <table class="data-table" id="records-table">
             <thead>
               <tr>
@@ -195,6 +206,7 @@
             </tbody>
           </table>
         </div>
+        <span class="scroll-fade-right" id="records-scroll-fade" aria-hidden="true"></span>
       </div>
     </section>
 

@@ -67,7 +67,30 @@ async function loadRecords() {
     });
   } catch (err) {
     tbody.innerHTML = `<tr><td colspan="${colSpan}" class="empty-row">${escapeHtml(err.message)}</td></tr>`;
+  } finally {
+    updateRecordsScrollFade();
   }
+}
+
+/**
+ * ES: Muestra/oculta el degradado ".scroll-fade-right" según si la
+ *     tabla de registros realmente tiene más contenido a la derecha del
+ *     que se ve, y según qué tan cerca del final ya se hizo scroll.
+ *     Encontrado probando el layout a 375px de ancho (ver index.html):
+ *     la tabla SÍ se podía desplazar, pero nada en pantalla lo indicaba.
+ * EN: Shows/hides the ".scroll-fade-right" gradient depending on whether
+ *     the records table actually has more content to the right than is
+ *     visible, and how close to the end it has already been scrolled.
+ *     Found by testing the layout at a 375px width (see index.html): the
+ *     table WAS scrollable, but nothing on screen hinted at it.
+ */
+function updateRecordsScrollFade() {
+  const scrollEl = document.getElementById('records-scroll');
+  const fadeEl = document.getElementById('records-scroll-fade');
+  if (!scrollEl || !fadeEl) return;
+
+  const hasMoreToShow = scrollEl.scrollWidth - scrollEl.clientWidth - scrollEl.scrollLeft > 4;
+  fadeEl.classList.toggle('visible', hasMoreToShow);
 }
 
 function renderRecordRow(r, isAdmin) {
@@ -161,4 +184,7 @@ function initRecordsSearch() {
   document.getElementById('search-client').addEventListener('change', loadRecords);
   document.getElementById('search-month').addEventListener('change', loadRecords);
   document.getElementById('search-consultant').addEventListener('change', loadRecords);
+
+  document.getElementById('records-scroll').addEventListener('scroll', updateRecordsScrollFade);
+  window.addEventListener('resize', updateRecordsScrollFade);
 }

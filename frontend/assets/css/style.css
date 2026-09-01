@@ -410,7 +410,30 @@ body {
    ES: Tabla de datos
    EN: Data table
    --------------------------------------------------------------------- */
+.table-panel { position: relative; }
 .table-scroll { overflow-x: auto; }
+
+/* ES: Degradado que avisa "hay más columnas, desliza" cuando la tabla
+       no cabe completa en pantallas angostas -- records.js lo
+       muestra/oculta según la posición real del scroll (mostrado al
+       cargar y mientras no se llegue al final; oculto al llegar).
+   EN: Gradient hinting "more columns, swipe" when the table doesn't
+       fully fit on narrow screens -- records.js shows/hides it based on
+       the actual scroll position (shown on load and while not at the
+       end; hidden once you reach it). */
+.scroll-fade-right {
+  position: absolute;
+  top: 60px;
+  bottom: 0;
+  right: 0;
+  width: 36px;
+  background: linear-gradient(to right, transparent, rgba(11, 12, 30, 0.9));
+  border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.25s var(--ease);
+}
+.scroll-fade-right.visible { opacity: 1; }
 
 .data-table {
   width: 100%;
