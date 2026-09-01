@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ConsultHours — Registro de horas facturables</title>
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="assets/css/animations.css">
+</head>
+<body>
+
+<!-- ES: Capa de fondo animada (gradiente + formas flotantes en 3D).
+     EN: Animated background layer (gradient + floating 3D shapes). -->
+<div class="bg-scene" aria-hidden="true">
+  <div class="bg-shape shape-1"></div>
+  <div class="bg-shape shape-2"></div>
+  <div class="bg-shape shape-3"></div>
+</div>
+
+<!-- ES: Contenedor de notificaciones tipo "toast".
+     EN: Toast notification container. -->
+<div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+<div id="app" class="app">
+
+  <!-- =====================================================
+       VISTA: LOGIN / LOGIN VIEW
+       ===================================================== -->
+  <section id="view-login" class="view view-login">
+    <div class="login-scene">
+      <form id="login-form" class="card card-3d login-card" autocomplete="off">
+        <div class="brand">
+          <span class="brand-mark">CH</span>
+          <h1>ConsultHours</h1>
+          <p class="brand-subtitle">Registro de horas facturables</p>
+        </div>
+
+        <label class="field">
+          <span>Usuario</span>
+          <input type="text" id="login-username" name="username" required autocomplete="username">
+        </label>
+
+        <label class="field">
+          <span>Contraseña</span>
+          <input type="password" id="login-password" name="password" required autocomplete="current-password">
+        </label>
+
+        <button type="submit" class="btn btn-primary btn-3d" id="login-submit">
+          <span>Iniciar sesión</span>
+        </button>
+
+        <p id="login-error" class="form-error" hidden></p>
+
+        <p class="login-hint">
+          Usuarios de prueba: <code>admin/admin123</code>, <code>carla/carla2024</code>, <code>miguel/miguel!!</code>
+        </p>
+      </form>
+    </div>
+  </section>
+
+  <!-- =====================================================
+       APP (visible tras iniciar sesión) / APP (visible after login)
+       ===================================================== -->
+  <div id="view-shell" class="shell" hidden>
+
+    <header class="topbar card-3d">
+      <div class="topbar-brand">
+        <span class="brand-mark small">CH</span>
+        <strong>ConsultHours</strong>
+      </div>
+
+      <nav class="tabs" id="main-tabs">
+        <button class="tab-btn active" data-tab="records" type="button">Registros</button>
+        <button class="tab-btn" data-tab="summary" type="button">Resumen mensual</button>
+        <span class="tab-indicator" id="tab-indicator" aria-hidden="true"></span>
+      </nav>
+
+      <div class="topbar-user">
+        <span id="user-name" class="user-name"></span>
+        <span id="user-role" class="badge"></span>
+        <button id="logout-btn" class="btn btn-ghost" type="button">Salir</button>
+      </div>
+    </header>
+
+    <!-- =====================================================
+         TAB: REGISTROS / TAB: RECORDS
+         ===================================================== -->
+    <section id="tab-records" class="tab-panel active">
+
+      <div class="panel card-3d search-panel">
+        <div class="search-row">
+          <label class="field grow">
+            <span>Buscar</span>
+            <input type="text" id="search-q" placeholder="Cliente, descripción o consultor...">
+          </label>
+
+          <label class="field">
+            <span>Cliente</span>
+            <select id="search-client"><option value="">Todos</option></select>
+          </label>
+
+          <label class="field">
+            <span>Mes</span>
+            <input type="month" id="search-month">
+          </label>
+
+          <label class="field admin-only" id="search-consultant-wrap" hidden>
+            <span>Consultor</span>
+            <select id="search-consultant"><option value="">Todos</option></select>
+          </label>
+
+          <button id="new-record-btn" class="btn btn-primary btn-3d" type="button">+ Nuevo registro</button>
+        </div>
+      </div>
+
+      <!-- Formulario para crear un nuevo registro / New record form -->
+      <form id="record-form" class="panel card-3d record-form" hidden>
+        <h2>Nuevo registro de horas</h2>
+        <div class="form-grid">
+          <label class="field">
+            <span>Cliente</span>
+            <select id="rf-client" required></select>
+          </label>
+          <label class="field">
+            <span>Fecha</span>
+            <input type="date" id="rf-date" required>
+          </label>
+          <label class="field">
+            <span>Hora inicio</span>
+            <input type="time" id="rf-start" required>
+          </label>
+          <label class="field">
+            <span>Hora fin</span>
+            <input type="time" id="rf-end" required>
+          </label>
+          <label class="field grow-full">
+            <span>Descripción</span>
+            <input type="text" id="rf-description" maxlength="255" placeholder="¿En qué trabajaste?">
+          </label>
+          <label class="field checkbox-field">
+            <input type="checkbox" id="rf-billable" checked>
+            <span>Facturable</span>
+          </label>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-ghost" id="record-cancel-btn">Cancelar</button>
+          <button type="submit" class="btn btn-primary btn-3d">Guardar registro</button>
+        </div>
+        <p id="record-form-error" class="form-error" hidden></p>
+      </form>
+
+      <div class="panel card-3d table-panel">
+        <div class="table-scroll">
+          <table class="data-table" id="records-table">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Cliente</th>
+                <th class="admin-only" hidden>Consultor</th>
+                <th>Horario</th>
+                <th>Horas</th>
+                <th>Descripción</th>
+                <th>Facturable</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="records-tbody">
+              <tr><td colspan="8" class="empty-row">Cargando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- =====================================================
+         TAB: RESUMEN MENSUAL / TAB: MONTHLY SUMMARY
+         ===================================================== -->
+    <section id="tab-summary" class="tab-panel">
+      <div class="panel card-3d search-panel">
+        <div class="search-row">
+          <label class="field">
+            <span>Mes</span>
+            <input type="month" id="summary-month">
+          </label>
+          <label class="field admin-only" id="summary-consultant-wrap" hidden>
+            <span>Consultor</span>
+            <select id="summary-consultant"><option value="">Todos los consultores</option></select>
+          </label>
+        </div>
+        <p class="scope-hint" id="summary-scope-hint"></p>
+      </div>
+
+      <div class="panel card-3d">
+        <h2>Horas facturables por cliente</h2>
+        <div id="summary-chart" class="summary-chart"></div>
+
+        <div class="table-scroll">
+          <table class="data-table" id="summary-table">
+            <thead>
+              <tr>
+                <th>Cliente</th>
+                <th>Horas facturables</th>
+                <th># Registros</th>
+              </tr>
+            </thead>
+            <tbody id="summary-tbody">
+              <tr><td colspan="3" class="empty-row">Cargando...</td></tr>
+            </tbody>
+            <tfoot>
+              <tr class="total-row">
+                <td>Total</td>
+                <td id="summary-total">0</td>
+                <td></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<script src="assets/js/api.js"></script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/records.js"></script>
+<script src="assets/js/summary.js"></script>
+<script src="assets/js/main.js"></script>
+</body>
+</html>
