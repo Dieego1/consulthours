@@ -31,8 +31,8 @@ another?".
 | **JavaScript (vanilla, sin framework)** | Toda la lógica del frontend: `fetch`, manejo de sesión, render de tablas, formularios (`frontend/assets/js/*.js`). | El tamaño del proyecto (una SPA de 2 pantallas) no justifica la complejidad de un framework + bundler; vanilla JS se abre directo en el navegador servido por Apache, sin `npm install`. |
 | **HTML5** | Estructura semántica de la única página (`frontend/index.html`). | — |
 | **CSS3** | Layout, componentes visuales, y **todas** las animaciones 3D (`style.css`, `animations.css`). | `transform`/`perspective`/`@keyframes` nativos alcanzan para animaciones 3D fluidas sin ninguna librería — una dependencia externa aquí sería puro riesgo sin beneficio. |
-| **Python 3** | Script de verificación independiente (`scripts/verify_summary.py`) que recalcula el resumen mensual y lo compara contra el API real. | **A propósito un lenguaje distinto al del backend.** Si el script de verificación estuviera en PHP y compartiera, aunque fuera sin querer, una función con `summary.php`, un bug en esa función podría "verse bien" en ambos lados. Usar Python obliga a que el cálculo se escriba dos veces, de forma independiente, en dos lenguajes distintos — así una coincidencia entre ambos sí es evidencia real de que el número es correcto. |
-| **Bash / PowerShell** | Solo para *probar* el sistema durante el desarrollo (`curl` contra los endpoints, `mysql` por consola) — no son parte de la aplicación entregada. | Verificar con peticiones HTTP reales, no solo leyendo el código, es la única forma de confirmar que la autorización realmente bloquea lo que dice bloquear (ver §8 más abajo). |
+| **Python 3** | Verificación independiente del resumen (`scripts/verify_summary.py`) y suite de pruebas automatizadas de todo el API (`scripts/test_api.py`, 15 pruebas con `unittest` de la librería estándar). | **A propósito un lenguaje distinto al del backend.** Si el script de verificación estuviera en PHP y compartiera, aunque fuera sin querer, una función con `summary.php`, un bug en esa función podría "verse bien" en ambos lados. Usar Python obliga a que el cálculo se escriba dos veces, de forma independiente, en dos lenguajes distintos — así una coincidencia entre ambos sí es evidencia real de que el número es correcto. |
+| **Bash / PowerShell** | Durante el desarrollo, probar el sistema real (`curl` contra los endpoints, `mysql` por consola). Como entregable: `scripts/check_all.sh`/`.ps1`, que corren linting + las dos suites de Python en un solo comando. | Verificar con peticiones HTTP reales, no solo leyendo el código, es la única forma de confirmar que la autorización realmente bloquea lo que dice bloquear (ver §8 más abajo). El script de un solo comando es la automatización que pide el enunciado de fondo: reunir PHP + JS + Python en un solo lugar verificable. |
 | **Apache (`.htaccess`)** | Control de acceso a nivel de servidor: `DirectoryIndex` en la raíz, `Require all denied` en `database/`, `scripts/`, `backend/config/`, `backend/includes/`. | Seguridad en capas: aunque la aplicación esté bien escrita, si el *servidor* sirve cualquier archivo bajo `htdocs` sin distinción, un archivo como `seed_data.json` (con contraseñas de prueba) queda expuesto igual. Esto se corrigió a nivel de servidor, no de aplicación, porque es donde vive el problema. |
 | **Git** | Control de versiones de todo el código. | Ver [`docs/GIT.md`](GIT.md) — sección dedicada completa, incluida la lista de cada commit. |
 
@@ -68,11 +68,13 @@ another?".
 - **Índices pensados para las consultas reales:** `idx_consultant_date (consultant_id, work_date)` existe porque tanto la detección de traslapes (`mark_overlaps()`) como el resumen mensual filtran exactamente por esas dos columnas — un índice que nadie usa es solo peso muerto.
 - **Una sola fuente de verdad para los datos de prueba:** `database/seed_data.json` alimenta tanto `seed.php` (MySQL por consola) como `scripts/verify_summary.py` (el cálculo esperado) — si vivieran por separado, podrían desincronizarse sin que nadie lo note. `database/seed.sql` (para phpMyAdmin) es la excepción deliberada: no lo lee ningún script, así que si `seed_data.json` cambia, hay que actualizarlo a mano (ver `docs/DOCUMENTACION.md` §3).
 
-## 5. ES: Caso real — el error de base de datos que tuve y cómo se corrigió
+## 5. ES: Casos reales — errores que tuve y cómo se corrigieron
 
-Este es un caso concreto que pasó en la práctica, no un riesgo teórico —
-vale la pena poder contarlo en una entrevista tal cual, con el mensaje de
-error real incluido.
+Estos son tres casos concretos que pasaron en la práctica, no riesgos
+teóricos — vale la pena poder contarlos en una entrevista tal cual, con
+los mensajes de error reales incluidos.
+
+### 5.1 phpMyAdmin y el `TRUNCATE` que fallaba
 
 **Qué pasó:** siguiendo las instrucciones de `README.md`, pegué el
 contenido de `database/seed.sql` en la pestaña **SQL** de phpMyAdmin y le
@@ -131,6 +133,91 @@ el resultado — y la solución más robusta casi siempre es **quitarle a la
 herramienta la oportunidad de interferir**, no pelear contra su
 configuración por defecto.
 
+### 5.2 PHP y MySQL no tenían el mismo reloj
+
+**Qué pasó:** al mejorar el bloqueo por intentos fallidos de login (antes
+contaba por sesión de navegador; ahora se guarda en una tabla
+`login_attempts` en MySQL, para que no se reinicie solo con borrar
+cookies — ver `NOTES.md` §1.7), la primera versión simplemente no
+bloqueaba nunca. Se probó lanzando 6 intentos fallidos seguidos contra la
+misma cuenta y el sexto seguía respondiendo `401` normal en vez de `429`.
+
+**Por qué pasó:** la consulta que cuenta los intentos recientes comparaba
+`attempted_at` (guardado por MySQL con su propio `NOW()`) contra una
+fecha límite calculada en PHP con `date('Y-m-d H:i:s', time() - 300)`.
+Al comparar el reloj de cada uno a mano:
+
+```
+Hora según PHP:   2026-09-01 23:00:42
+Hora según MySQL: 2026-09-01 15:00:42
+```
+
+**8 horas de diferencia**, en la misma máquina, entre dos zonas horarias
+configuradas por separado (la de PHP en `php.ini`, la de MySQL en su
+propia configuración). La fecha límite que calculaba PHP ("hace 5
+minutos") terminaba siendo *más tarde* que cualquier `attempted_at` real
+guardado por MySQL, así que la condición `attempted_at > límite` daba
+falso siempre, sin importar cuántos intentos hubiera.
+
+**Cómo se diagnosticó:** en vez de asumir un error de lógica, se
+comparó la hora que reporta cada motor por separado (`php -r "echo
+date('Y-m-d H:i:s');"` contra `SELECT NOW();` en MySQL) — eso hizo
+evidente el desfase en dos líneas, sin necesidad de revisar la consulta
+SQL primero.
+
+**Cómo se corrigió:** en vez de intentar sincronizar los dos relojes (o
+convertir manualmente entre zonas horarias, frágil y fácil de romper de
+nuevo), se eliminó la necesidad de que coincidan: **todo** el cálculo de
+tiempo se mueve a la consulta SQL, usando `NOW()`, `INTERVAL` y
+`TIMESTAMPDIFF()` de MySQL — una sola fuente de verdad para "qué hora
+es", en vez de dos relojes que tienen que estar de acuerdo. Verificado de
+nuevo con 6 intentos fallidos reales: el sexto ya respondió `429` con el
+tiempo de espera correcto, la contraseña válida también quedó bloqueada
+mientras dura el límite (protege la cuenta, no solo los intentos malos),
+y otro usuario no relacionado no se vio afectado.
+
+**El aprendizaje que vale la pena quedarse:** cuando dos sistemas
+distintos (aquí, PHP y MySQL, corriendo en la misma máquina) necesitan
+ponerse de acuerdo en "qué hora es", no asumas que comparten reloj —
+compáralo explícitamente. Y cuando puedas elegir, deja que **un solo**
+sistema sea dueño del cálculo de tiempo (aquí, la base de datos, porque
+ahí es donde vive el dato) en vez de sincronizar dos.
+
+### 5.3 El script de automatización "pasaba" aunque las pruebas fallaran, en PowerShell
+
+**Qué pasó:** al escribir `scripts/check_all.ps1` (la versión PowerShell
+de `check_all.sh`, que corre linting + `test_api.py` + `verify_summary.py`
+en un solo comando), la primera versión usaba `python ... 2>&1` para
+capturar la salida de cada script de Python. Con las 15 pruebas de
+`test_api.py` pasando, el paso 3 igual se reportaba como fallido, con un
+`NativeCommandError` en la consola en vez del resumen limpio esperado.
+
+**Por qué pasó:** `unittest` (lo que corre `test_api.py`) escribe su
+resultado en **stderr** por diseño, no en stdout — eso es normal y no es
+el problema. El problema es específico de PowerShell 5.1: al redirigir el
+stderr de un ejecutable *nativo* (no un cmdlet) con `2>&1`, PowerShell
+envuelve **cada línea** en un objeto `ErrorRecord`, y eso hace que `$?`
+quede en `$false` aunque el proceso haya terminado con código de salida
+`0`. El script estaba revisando la señal equivocada para decidir si algo
+había fallado.
+
+**Cómo se corrigió:** en vez de leer `$?` (contaminado por el envoltorio
+de PowerShell), el script pasó a delegar la redirección a `cmd /c "...
+> archivo 2>&1"` — `cmd.exe` no tiene ese comportamiento, así que
+`$LASTEXITCODE` después de la llamada refleja el código de salida real de
+Python. Verificado corriendo el script completo dos veces: con las 15
+pruebas pasando (reporta éxito, `EXIT CODE: 0`) y confirmando que el
+mismo patrón de "OK"/salida limpia se mantiene para los otros tres pasos.
+
+**El aprendizaje que vale la pena quedarse:** el código de salida de un
+proceso y la señal que tu *shell* usa para decirte si algo salió mal no
+siempre son la misma cosa — cada shell tiene sus propias reglas para
+mezclar streams, y esas reglas pueden mentir. Cuando una comprobación de
+éxito/fracaso es crítica (como en un script pensado para bloquear un
+commit o un pipeline de CI), vale la pena verificar esa señal de forma
+explícita, no asumir que "el patrón de siempre" se comporta igual en
+todas las shells.
+
 ## 6. ES: Frontend / EN: Frontend
 
 - **SPA sin framework:** cambiar de pestaña (`main.js::initTabs`) es solo `classList.toggle('active', ...)` sobre los paneles que ya están en el DOM — no hace falta un router ni un framework de componentes para dos vistas.
@@ -174,7 +261,7 @@ solo escribas el código") fue lo que lo activó.
 
 ### 8.2 Encontrar errores de la IA por evidencia, no por sospecha
 
-Dos ejemplos concretos de esta misma sesión:
+Tres ejemplos concretos de esta misma sesión:
 
 1. **El gráfico de barras del resumen** se veía con las tres barras casi
    idénticas en una captura de pantalla, aunque representaban 100%, 54% y
@@ -183,10 +270,15 @@ Dos ejemplos concretos de esta misma sesión:
    problema era puramente de contraste de color en el CSS.
 2. **El script `database/seed.sql`** funcionaba perfecto por línea de
    comandos, pero falló al usarlo de verdad en phpMyAdmin — ver el caso
-   completo, con el mensaje de error real y cómo se corrigió, en **§5 de
-   este mismo documento**. Fue el aprendizaje más concreto de toda la
-   sesión: **"funciona en mi prueba" y "funciona en la herramienta real
+   completo en **§5.1 de este documento**. Fue un aprendizaje muy
+   concreto: **"funciona en mi prueba" y "funciona en la herramienta real
    que va a usar la otra persona" no son la misma afirmación.**
+3. **El bloqueo por intentos fallidos de login** simplemente no
+   bloqueaba, sin ningún error visible — solo dejaba de tener efecto. La
+   causa fue un desfase de 8 horas entre el reloj de PHP y el de MySQL en
+   la misma máquina; ver el caso completo en **§5.2**. El error más
+   difícil de encontrar no siempre es el que lanza una excepción — a
+   veces es el que falla en silencio.
 
 ### 8.3 Pedir explícitamente lo que no es "solo código"
 
@@ -230,4 +322,6 @@ cada una tiene sentido, no solo repetir el texto.
 | "¿Cómo protegiste contra CSRF/XSS/inyección SQL?" | `NOTES.md` §1.3, §1.6, §1.9 |
 | "¿Por qué está todo en `public/`, `database/`, `backend/`...?" | `docs/DOCUMENTACION.md` §2 + `NOTES.md` §1.12 |
 | "¿Por qué tantos commits chicos en vez de uno?" | `docs/GIT.md` completo |
-| "Cuéntame de un bug real que hayas resuelto" | §5 de este documento — el error `#1701` de phpMyAdmin, causa raíz y corrección, no solo el síntoma |
+| "Cuéntame de un bug real que hayas resuelto" | §5.1 (error `#1701` de phpMyAdmin), §5.2 (desfase de reloj PHP/MySQL) y §5.3 (PowerShell + `2>&1`) — los tres con causa raíz y corrección, no solo el síntoma |
+| "¿Tienes pruebas automatizadas, o todo fue manual?" | `scripts/test_api.py` (15 pruebas, `unittest`) + `scripts/check_all.sh`/`.ps1` — §8.2 y §8.3 de `docs/DOCUMENTACION.md` |
+| "¿Cómo evitas fuerza bruta en el login?" | `NOTES.md` §1.7 — bloqueo por usuario persistido en BD, no por sesión de navegador |

@@ -55,8 +55,14 @@ PRUEBA TECNICA/
 │       └── css/animations.css      # animaciones y transiciones 3D
 │       └── js/                     # api.js, auth.js, records.js, summary.js, main.js
 ├── scripts/                       # Protegida por .htaccess (no accesible por URL)
-│   └── verify_summary.py           # verifica /api/summary.php contra seed_data.json
-├── docs/DOCUMENTACION.md          # documentación técnica completa
+│   ├── verify_summary.py           # verifica /api/summary.php contra seed_data.json
+│   ├── test_api.py                 # suite de pruebas automatizadas del API (unittest)
+│   ├── check_all.sh                # corre las 4 verificaciones de una vez (Bash)
+│   └── check_all.ps1               # lo mismo, version PowerShell
+├── docs/
+│   ├── DOCUMENTACION.md            # documentación técnica completa
+│   ├── GIT.md                      # por qué se usa git, y qué hace cada commit
+│   └── APRENDIZAJES.md             # aprendizajes del proyecto, listos para entrevista
 └── NOTES.md                       # hallazgos de seguridad, decisiones, uso de IA
 ```
 
@@ -122,6 +128,36 @@ El script calcula en Python, de forma independiente, cuántas horas
 facturables debería tener cada cliente (a partir de
 `database/seed_data.json`) y lo compara contra lo que realmente responde el
 API, para cada consultor y para el administrador, en cada mes con datos.
+
+## Suite de pruebas automatizadas
+
+`scripts/test_api.py` formaliza, como pruebas repetibles (con
+`unittest` de la librería estándar de Python), todo lo que se verificó a
+mano con `curl` durante el desarrollo: autenticación, autorización por
+dueño/rol, el intento de suplantación del punto 4 del enunciado, la
+detección de traslapes, la visibilidad del resumen entre consultores, una
+prueba básica de inyección SQL y el bloqueo por intentos fallidos de
+login.
+
+```bash
+python scripts/test_api.py -v
+```
+
+## Correr todas las verificaciones de una vez
+
+`scripts/check_all.sh` (Bash/Git Bash) y `scripts/check_all.ps1`
+(PowerShell) hacen, en un solo comando, las cuatro comprobaciones que
+importan antes de dar por buenos los cambios: sintaxis de cada archivo
+PHP, sintaxis de cada archivo JS, la suite de pruebas del API, y la
+verificación del resumen mensual.
+
+```bash
+bash scripts/check_all.sh          # Git Bash
+powershell -File scripts\check_all.ps1   # PowerShell
+```
+
+Termina con código de salida `0` si todo pasó — pensado para engancharse
+a un pre-commit hook o a CI el día que este proyecto lo necesite.
 
 ## Notas
 

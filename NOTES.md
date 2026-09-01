@@ -95,12 +95,34 @@ defensa en profundidad.
 
 ### 1.7 Fuerza bruta en login
 
-**Mitigación (parcial, documentada como limitación):**
-`backend/api/auth/login.php` bloquea 30 segundos tras 5 intentos fallidos
-**dentro de la misma sesión de navegador**. No sustituye un *rate limit*
-real por IP a nivel de infraestructura (ej. fail2ban, un *reverse proxy*
-con límite de tasa, o una tabla de intentos por IP con expiración) — para
-un sistema en producción se recomienda esa capa adicional.
+**Mitigación:** `backend/api/auth/login.php` bloquea una cuenta 5 minutos
+tras 5 intentos fallidos, contados **por nombre de usuario y persistidos
+en la tabla `login_attempts`** — no en `$_SESSION`. La primera versión sí
+usaba un contador de sesión, con un problema real: bastaba con borrar las
+cookies (o abrir una pestaña de incógnito) para reiniciar el contador y
+seguir intentando contraseñas sin límite. La versión actual protege la
+**cuenta**, no el navegador de quien ataca, así que ese atajo ya no
+funciona — se verificó explícitamente lanzando los 5 intentos fallidos
+con una cookie nueva cada vez.
+
+Sigue sin sustituir un *rate limit* de infraestructura por IP (ej.
+fail2ban o un *reverse proxy* con límite de tasa) — eso protegería contra
+un atacante probando muchas cuentas distintas a la vez, que es un
+escenario distinto al que esto cubre (proteger una cuenta puntual).
+
+**Bug encontrado y corregido al implementar esto:** la primera versión
+calculaba la ventana de tiempo con `time()`/`date()` de PHP y la
+comparaba contra timestamps que MySQL había guardado con su propio
+`NOW()`. En esta máquina XAMPP, el reloj de PHP y el de MySQL resultaron
+tener **~8 horas de diferencia** (zonas horarias configuradas por
+separado) — el bloqueo nunca se activaba, sin importar cuántos intentos
+fallaran, porque la comparación de fechas siempre daba falso. Se encontró
+probando con intentos fallidos reales (no leyendo el código) y se
+corrigió haciendo *todo* el cálculo de tiempo dentro de la consulta SQL,
+con `NOW()`/`INTERVAL`/`TIMESTAMPDIFF()` de MySQL — una sola fuente de
+verdad para "qué hora es", en vez de sincronizar dos relojes. Ver el caso
+completo, con los comandos exactos usados para diagnosticarlo, en
+`docs/APRENDIZAJES.md` §5.1.
 
 ### 1.8 Fuga de información en errores
 
@@ -342,8 +364,8 @@ Meses encontrados en los datos de prueba: 2026-07, 2026-08
 Todos los resúmenes de /api/summary.php coinciden con seed_data.json.
 ```
 
-Pruebas de autorización realizadas manualmente vía `curl` (ver también
-`docs/DOCUMENTACION.md`):
+Pruebas de autorización realizadas manualmente vía `curl` durante el
+desarrollo (ver también `docs/DOCUMENTACION.md`):
 
 - Sin sesión, `GET /backend/api/records.php` → `401`.
 - `carla` autenticada creando un registro con `"consultant_id": 3` (el id
@@ -356,3 +378,34 @@ Pruebas de autorización realizadas manualmente vía `curl` (ver también
   lo suyo.
 - `admin` autenticado en `/api/summary.php` sin filtro → agregado de todos
   los consultores; con `?consultant_id=`, solo ese consultor.
+
+Esas mismas comprobaciones (y varias más) ya no dependen de recordar y
+volver a escribir comandos de `curl`: quedaron codificadas como pruebas
+automatizadas repetibles en `scripts/test_api.py` (ver
+`docs/DOCUMENTACION.md` §8.2). Última corrida completa:
+
+```
+test_login_correct_returns_user_without_hash (AuthenticationTests) ... ok
+test_login_wrong_password_is_401 (AuthenticationTests) ... ok
+test_protected_endpoint_without_session_is_401 (AuthenticationTests) ... ok
+test_fifth_failed_attempt_still_401_sixth_is_429 (LoginRateLimitTests) ... ok
+test_august_6th_carla_records_are_flagged_as_overlapping (OverlapDetectionTests) ... ok
+test_creating_an_overlapping_record_warns_but_does_not_block (OverlapDetectionTests) ... ok
+test_admin_can_delete_any_record (OwnershipAndAuthorizationTests) ... ok
+test_admin_sees_records_from_all_consultants (OwnershipAndAuthorizationTests) ... ok
+test_consultant_can_delete_own_record (OwnershipAndAuthorizationTests) ... ok
+test_consultant_cannot_delete_others_record (OwnershipAndAuthorizationTests) ... ok
+test_consultant_only_sees_own_records_even_if_filter_says_otherwise (OwnershipAndAuthorizationTests) ... ok
+test_owner_is_always_the_session_user_never_the_body (OwnershipAndAuthorizationTests) ... ok
+test_search_with_sql_metacharacters_does_not_error_or_leak (SqlInjectionTests) ... ok
+test_admin_without_filter_sees_aggregate_of_all_consultants (SummaryVisibilityTests) ... ok
+test_consultant_cannot_see_another_consultants_summary (SummaryVisibilityTests) ... ok
+
+Ran 15 tests in 4.795s
+
+OK
+```
+
+`scripts/check_all.sh` / `scripts/check_all.ps1` corren esto, la
+verificación del resumen, y el linting de PHP/JS en un solo comando —
+ver `docs/DOCUMENTACION.md` §8.3.
