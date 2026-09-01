@@ -1,0 +1,25 @@
+# ES: Sin esto, Apache sirve los .js/.css sin ninguna cabecera de caché
+# (solo Last-Modified/ETag por defecto), así que un navegador puede
+# seguir usando una copia vieja de un archivo que ya cambió en el
+# servidor sin volver a preguntar -- pasó de verdad durante esta sesión:
+# una pestaña abierta desde antes de una corrección no reflejaba el
+# cambio hasta hacer un refresco forzado. "no-cache" no significa "nunca
+# guardes copia": el navegador sigue guardando una copia, pero SIEMPRE
+# revalida contra el servidor (con ETag/Last-Modified) antes de usarla,
+# así que un archivo sin cambios sigue cargando rápido (304 Not
+# Modified) y uno que sí cambió se nota de inmediato.
+#
+# EN: Without this, Apache serves .js/.css with no cache-control header
+# at all (just the default Last-Modified/ETag), so a browser can keep
+# using an old copy of a file that already changed on the server
+# without ever asking again -- this genuinely happened during this
+# session: a tab left open from before a fix didn't pick it up until a
+# forced refresh. "no-cache" doesn't mean "never cache": the browser
+# still keeps a copy, but ALWAYS revalidates against the server
+# (via ETag/Last-Modified) before using it, so an unchanged file still
+# loads fast (304 Not Modified) and a changed one shows up immediately.
+<IfModule mod_headers.c>
+  <FilesMatch "\.(js|css)$">
+    Header set Cache-Control "no-cache, must-revalidate"
+  </FilesMatch>
+</IfModule>
