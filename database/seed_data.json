@@ -1,0 +1,45 @@
+{
+  "_comment_es": "Fuente única de verdad para los datos de prueba. La usan database/seed.php (para poblar MySQL) y scripts/verify_summary.py (para calcular el resumen esperado y compararlo contra el API). No editar horas por separado: siempre se derivan de start/end.",
+  "_comment_en": "Single source of truth for seed/test data. Used by database/seed.php (to populate MySQL) and scripts/verify_summary.py (to compute the expected summary and compare it against the API). Do not edit hours separately: they are always derived from start/end.",
+
+  "users": [
+    { "username": "admin",  "password": "admin123",  "full_name": "Administrador General", "role": "admin" },
+    { "username": "carla",  "password": "carla2024", "full_name": "Carla Jiménez",          "role": "consultant" },
+    { "username": "miguel", "password": "miguel!!",  "full_name": "Miguel Torres",          "role": "consultant" }
+  ],
+
+  "clients": [
+    "Acme Corp",
+    "Globex Industries",
+    "Initech Solutions",
+    "Umbrella Labs"
+  ],
+
+  "time_records": [
+    { "username": "carla",  "client": "Acme Corp",           "date": "2026-07-02", "start": "09:00", "end": "12:00", "billable": true,  "description": "Levantamiento de requerimientos" },
+    { "username": "carla",  "client": "Globex Industries",   "date": "2026-07-03", "start": "13:00", "end": "17:00", "billable": true,  "description": "Desarrollo de módulo de reportes" },
+    { "username": "carla",  "client": "Acme Corp",           "date": "2026-07-07", "start": "09:00", "end": "11:00", "billable": true,  "description": "Revisión de código" },
+    { "username": "carla",  "client": "Initech Solutions",   "date": "2026-07-10", "start": "10:00", "end": "12:00", "billable": false, "description": "Capacitación interna (no facturable)" },
+    { "username": "carla",  "client": "Globex Industries",   "date": "2026-07-15", "start": "14:00", "end": "18:00", "billable": true,  "description": "Implementación de API" },
+    { "username": "carla",  "client": "Acme Corp",           "date": "2026-07-22", "start": "09:00", "end": "13:00", "billable": true,  "description": "Pruebas de integración" },
+
+    { "username": "miguel", "client": "Initech Solutions",   "date": "2026-07-01", "start": "09:00", "end": "13:00", "billable": true,  "description": "Configuración de servidores" },
+    { "username": "miguel", "client": "Umbrella Labs",       "date": "2026-07-08", "start": "09:00", "end": "12:00", "billable": true,  "description": "Auditoría de seguridad" },
+    { "username": "miguel", "client": "Initech Solutions",   "date": "2026-07-14", "start": "13:00", "end": "17:00", "billable": true,  "description": "Migración de base de datos" },
+    { "username": "miguel", "client": "Umbrella Labs",       "date": "2026-07-21", "start": "09:00", "end": "11:00", "billable": false, "description": "Soporte interno post-venta (no facturable)" },
+
+    { "username": "carla",  "client": "Umbrella Labs",       "date": "2026-08-04", "start": "09:00", "end": "11:30", "billable": true,  "description": "Diagnóstico de incidente" },
+
+    { "username": "carla",  "client": "Acme Corp",           "date": "2026-08-06", "start": "09:00", "end": "12:00", "billable": true,  "description": "Reunión de arquitectura (registro A, se traslapa con B)" },
+    { "username": "carla",  "client": "Globex Industries",   "date": "2026-08-06", "start": "11:00", "end": "13:00", "billable": true,  "description": "Soporte urgente (registro B, se traslapa con A de 11:00 a 12:00)" },
+
+    { "username": "carla",  "client": "Acme Corp",           "date": "2026-08-12", "start": "09:00", "end": "17:00", "billable": true,  "description": "Sprint de desarrollo" },
+    { "username": "carla",  "client": "Initech Solutions",   "date": "2026-08-18", "start": "09:00", "end": "12:00", "billable": false, "description": "Reunión interna de equipo (no facturable)" },
+    { "username": "carla",  "client": "Globex Industries",   "date": "2026-08-25", "start": "09:00", "end": "13:00", "billable": true,  "description": "Optimización de consultas SQL" },
+
+    { "username": "miguel", "client": "Initech Solutions",   "date": "2026-08-05", "start": "09:00", "end": "13:00", "billable": true,  "description": "Desarrollo de dashboard" },
+    { "username": "miguel", "client": "Umbrella Labs",       "date": "2026-08-11", "start": "09:00", "end": "15:00", "billable": true,  "description": "Implementación de CI/CD" },
+    { "username": "miguel", "client": "Initech Solutions",   "date": "2026-08-19", "start": "09:00", "end": "12:00", "billable": true,  "description": "Revisión de arquitectura" },
+    { "username": "miguel", "client": "Umbrella Labs",       "date": "2026-08-27", "start": "09:00", "end": "13:00", "billable": true,  "description": "Corrección de bugs críticos" }
+  ]
+}
