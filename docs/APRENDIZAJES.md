@@ -381,6 +381,7 @@ cada una tiene sentido, no solo repetir el texto.
 
 | Si preguntan... | La respuesta está en... |
 |---|---|
+| "¿Por qué no usaste el repositorio de partida que te dieron?" | `NOTES.md` (aclaración de contexto, al inicio) — decisión explícita: el entrevistador pidió no copiar y pegar, así que todo el código de este proyecto se escribió desde cero, en un stack elegido por mí (PHP + MySQL en vez de Node.js + SQLite), precisamente para que cada línea se pueda defender como propia |
 | "¿Cómo evitas que un consultor vea/borre datos de otro?" | `NOTES.md` §1.1, §1.2 + `backend/includes/auth.php` |
 | "¿Cómo sabes que el resumen mensual es correcto?" | `scripts/verify_summary.py` + `NOTES.md` §4 (evidencia real de una corrida) |
 | "¿Por qué no usaste un framework?" | §1 y §3 de este documento — tamaño del proyecto vs. complejidad agregada |

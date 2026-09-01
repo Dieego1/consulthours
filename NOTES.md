@@ -4,16 +4,28 @@ Notas del ejercicio técnico: vulnerabilidades consideradas y su mitigación,
 las dos decisiones de negocio que el enunciado deja abiertas, y el uso de
 IA durante la construcción del proyecto.
 
-> Aclaración de contexto: el enunciado original describe un repositorio de
-> partida (`backend/`, `frontend/` en Node.js) con vulnerabilidades ya
-> sembradas para encontrar y corregir. En este caso el directorio de trabajo
-> estaba vacío, así que el sistema se construyó **desde cero** en PHP +
-> MySQL (XAMPP) + JS, por decisión explícita para este ejercicio. Por eso,
-> en vez de un diff "antes/después" de un código ajeno, este documento lista
-> los riesgos de seguridad típicos de un sistema de este tipo (autenticación
-> + autorización por rol/dueño + entrada de usuario) que se identificaron
-> **durante el diseño** y cómo quedaron mitigados en el código, con
-> referencia a archivo y mecanismo concreto.
+> Aclaración de contexto — por qué este no es el repositorio que dieron: el
+> enunciado original venía acompañado de un repositorio de partida
+> (`backend/`, `frontend/` en Node.js + SQLite) con vulnerabilidades ya
+> sembradas para encontrar y corregir. **Decidí no usar ese punto de
+> partida y construir el sistema completo desde cero** — código propio en
+> cada archivo, en un stack distinto (PHP + MySQL vía XAMPP + JS vanilla) —
+> en vez de partir del repositorio entregado y solo copiar/pegar sobre él.
+> La razón es explícita: el entrevistador técnico dejó claro que no quiere
+> una solución copiada y pegada, sino evidencia real de que entiendo y
+> puedo defender cada decisión. Construir desde cero, en un stack elegido
+> por mí, es justamente esa evidencia — cada línea de este proyecto se
+> puede explicar porque se escribió a propósito, no porque ya venía en un
+> archivo ajeno.
+>
+> Esto tiene una consecuencia directa en cómo leer este documento: en vez
+> de un diff "antes/después" sobre el código del repositorio original, la
+> sección de seguridad de abajo lista los riesgos típicos de un sistema de
+> este tipo (autenticación + autorización por rol/dueño + entrada de
+> usuario) que se identificaron **durante el diseño** de mi propia
+> implementación, y cómo quedaron mitigados, con referencia a archivo y
+> mecanismo concreto — no una corrección sobre un bug que alguien más
+> escribió.
 
 ---
 
