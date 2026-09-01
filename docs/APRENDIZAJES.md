@@ -70,7 +70,7 @@ another?".
 
 ## 5. ES: Casos reales — errores que tuve y cómo se corrigieron
 
-Estos son tres casos concretos que pasaron en la práctica, no riesgos
+Estos son cuatro casos concretos que pasaron en la práctica, no riesgos
 teóricos — vale la pena poder contarlos en una entrevista tal cual, con
 los mensajes de error reales incluidos.
 
@@ -218,6 +218,65 @@ commit o un pipeline de CI), vale la pena verificar esa señal de forma
 explícita, no asumir que "el patrón de siempre" se comporta igual en
 todas las shells.
 
+### 5.4 Los acentos se veían como "├│" en la pantalla real (este lo encontró revisando el navegador, no yo)
+
+**Qué pasó:** al abrir la aplicación en Chrome de verdad (no en las
+pruebas automatizadas) y loguearse como admin, varias descripciones se
+veían así: `Correcci├│n de bugs cr├¡ticos`, `Jim├⌐nez` en vez de
+`Corrección de bugs críticos`, `Jiménez`. Este bug **no lo encontré yo
+primero** — lo encontró la persona probando el sistema con sus propios
+ojos en el navegador, exactamente el paso que dice `README.md` que hay
+que hacer antes de entregar. Es la prueba de que "lo probé por API y con
+capturas automatizadas" (lo que se hizo durante toda la sesión) no
+sustituye por completo abrir la aplicación real una vez.
+
+**Por qué pasó (y por qué no era un bug de la aplicación):** se
+confirmó con `HEX(description)` en MySQL que los bytes **guardados en la
+base** ya estaban mal — no era un problema de cómo el navegador
+interpretaba una respuesta correcta, era el dato mismo, corrompido en
+el origen. El patrón exacto (`ó` → `├│`) es la huella digital de un tipo
+de corrupción muy específico: los bytes UTF-8 correctos de "ó" (`C3 B3`)
+se reinterpretaron carácter por carácter bajo la página de códigos
+CP437 de Windows (`0xC3` → "├", `0xB3` → "│") y **esos** caracteres se
+volvieron a guardar como UTF-8. Pasó porque, durante las pruebas de esta
+misma sesión, `database/seed.sql` se importó varias veces por línea de
+comandos (`mysql -u root < seed.sql`) sin forzar la codificación de la
+conexión — el cliente de MySQL en Windows, sin ese parámetro, puede
+tomar la página de códigos de la consola en vez de UTF-8. El backend en
+sí (`backend/config/database.php`, con `charset=utf8mb4` fijo en el DSN
+de PDO) nunca tuvo este problema; el dato ya llegaba corrompido desde
+antes de que la aplicación lo leyera.
+
+**Cómo se diagnosticó:** se comparó el hex real guardado en la base
+(`SELECT description, HEX(description) FROM time_records WHERE ...`)
+contra el hex correcto de la misma frase calculado aparte
+(`php -r "echo bin2hex('Corrección de bugs críticos');"`) — la
+diferencia entre `c3b3` (correcto) y `e2949c` (guardado) hizo evidente
+que el problema estaba en los bytes almacenados, no en cómo se mostraban.
+
+**Cómo se corrigió:** se agregó `SET NAMES utf8mb4;` como la primera
+instrucción real de `database/seed.sql`, para que la conexión quede en
+UTF-8 sin importar qué codificación traiga por defecto el cliente que
+ejecute el archivo (línea de comandos de Windows, phpMyAdmin, o
+cualquier otro). Se verificó de la forma más estricta posible:
+reimportando el archivo **sin** pasar ninguna bandera de codificación en
+la línea de comandos, confiando solo en el `SET NAMES` del propio
+archivo — y los bytes guardados salieron correctos. Se repobló la base
+y se confirmó con una captura de pantalla real (login como admin, filtro
+agosto 2026) que ya no aparece ningún carácter corrupto.
+
+**El aprendizaje que vale la pena quedarse:** un archivo SQL pensado
+para compartirse (llevárselo a otra máquina, pegarlo en phpMyAdmin,
+correrlo desde una terminal distinta) no debería depender de que quien
+lo ejecute tenga la codificación correcta configurada por fuera del
+archivo — debe declarar su propia codificación (`SET NAMES utf8mb4`) en
+vez de asumirla. Y, más en general: las pruebas automatizadas (API,
+`unittest`, capturas headless) verifican comportamiento, pero no
+sustituyen del todo mirar la aplicación real una vez antes de
+entregarla — este bug pasó *todas* las pruebas automatizadas de la
+sesión, porque ninguna comparaba el texto contra el carácter exacto
+esperado, solo contra la estructura de la respuesta.
+
 ## 6. ES: Frontend / EN: Frontend
 
 - **SPA sin framework:** cambiar de pestaña (`main.js::initTabs`) es solo `classList.toggle('active', ...)` sobre los paneles que ya están en el DOM — no hace falta un router ni un framework de componentes para dos vistas.
@@ -261,7 +320,7 @@ solo escribas el código") fue lo que lo activó.
 
 ### 8.2 Encontrar errores de la IA por evidencia, no por sospecha
 
-Tres ejemplos concretos de esta misma sesión:
+Cuatro ejemplos concretos de esta misma sesión:
 
 1. **El gráfico de barras del resumen** se veía con las tres barras casi
    idénticas en una captura de pantalla, aunque representaban 100%, 54% y
@@ -279,6 +338,14 @@ Tres ejemplos concretos de esta misma sesión:
    la misma máquina; ver el caso completo en **§5.2**. El error más
    difícil de encontrar no siempre es el que lanza una excepción — a
    veces es el que falla en silencio.
+4. **Los acentos corruptos en pantalla** (`§5.4`) los encontró la persona
+   probando la aplicación en su propio navegador, no las pruebas
+   automatizadas ni las capturas de pantalla que se tomaron durante la
+   sesión — ninguna de esas comprobaciones comparaba el texto exacto
+   carácter por carácter, solo la estructura de la respuesta. Es la
+   prueba más clara de todo el proyecto de que revisar con evidencia
+   automatizada reduce el riesgo, pero no reemplaza que un humano abra
+   la aplicación real al final.
 
 ### 8.3 Pedir explícitamente lo que no es "solo código"
 
@@ -322,6 +389,7 @@ cada una tiene sentido, no solo repetir el texto.
 | "¿Cómo protegiste contra CSRF/XSS/inyección SQL?" | `NOTES.md` §1.3, §1.6, §1.9 |
 | "¿Por qué está todo en `public/`, `database/`, `backend/`...?" | `docs/DOCUMENTACION.md` §2 + `NOTES.md` §1.12 |
 | "¿Por qué tantos commits chicos en vez de uno?" | `docs/GIT.md` completo |
-| "Cuéntame de un bug real que hayas resuelto" | §5.1 (error `#1701` de phpMyAdmin), §5.2 (desfase de reloj PHP/MySQL) y §5.3 (PowerShell + `2>&1`) — los tres con causa raíz y corrección, no solo el síntoma |
+| "Cuéntame de un bug real que hayas resuelto" | §5.1 (error `#1701` de phpMyAdmin), §5.2 (desfase de reloj PHP/MySQL), §5.3 (PowerShell + `2>&1`) y §5.4 (acentos corruptos por codificación) — los cuatro con causa raíz y corrección, no solo el síntoma |
+| "¿Las pruebas automatizadas lo detectan todo?" | §5.4 y §8.2 (punto 4) — un caso real donde no fue así, y qué se hizo distinto después |
 | "¿Tienes pruebas automatizadas, o todo fue manual?" | `scripts/test_api.py` (15 pruebas, `unittest`) + `scripts/check_all.sh`/`.ps1` — §8.2 y §8.3 de `docs/DOCUMENTACION.md` |
 | "¿Cómo evitas fuerza bruta en el login?" | `NOTES.md` §1.7 — bloqueo por usuario persistido en BD, no por sesión de navegador |

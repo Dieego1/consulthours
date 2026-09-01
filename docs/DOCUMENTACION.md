@@ -131,6 +131,17 @@ ningún script en tiempo real, así que si `seed_data.json` cambia,
 `seed.sql` se debe regenerar/actualizar a mano para que los tres caminos
 sigan de acuerdo.
 
+`seed.sql` empieza con `SET NAMES utf8mb4;` a propósito: sin eso, un
+cliente que se conecte con una codificación distinta a UTF-8 por defecto
+(por ejemplo, el cliente de línea de comandos de MySQL en Windows, que
+puede tomar la página de códigos de la consola) puede guardar los
+acentos corruptos de forma **permanente** en la base, aunque las tablas
+estén declaradas como `utf8mb4`. Pasó de verdad durante el desarrollo —
+ver el caso completo, con los bytes exactos que quedaron mal guardados y
+cómo se diagnosticó, en `docs/APRENDIZAJES.md` §5.4. `backend/config/database.php`
+nunca tuvo este problema porque fija `charset=utf8mb4` directo en el DSN
+de PDO, sin depender de ningún valor por defecto externo.
+
 ## 4. Backend: API PHP
 
 Todos los endpoints devuelven JSON y viven bajo `backend/api/`. Todos

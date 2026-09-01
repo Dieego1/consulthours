@@ -33,6 +33,20 @@
 --     tables/data.
 DROP DATABASE IF EXISTS consulthours;
 
+-- ES: Fuerza la codificacion de la conexion a utf8mb4 sin importar
+--     que codificacion use por defecto el cliente que ejecuta este
+--     script (el cliente de linea de comandos de MySQL en Windows,
+--     por ejemplo, puede tomar la pagina de codigos de la consola
+--     en vez de UTF-8) -- sin esto, los acentos (ó, í, é...) pueden
+--     guardarse corruptos de forma permanente.
+-- EN: Forces the connection encoding to utf8mb4 no matter what
+--     encoding the client running this script defaults to (the
+--     MySQL command-line client on Windows, for example, can pick
+--     up the console's code page instead of UTF-8) -- without
+--     this, accented characters can end up permanently corrupted
+--     in storage.
+SET NAMES utf8mb4;
+
 CREATE DATABASE IF NOT EXISTS consulthours
   CHARACTER SET utf8mb4
   COLLATE utf8mb4_unicode_ci;
