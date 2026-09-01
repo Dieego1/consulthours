@@ -15,6 +15,12 @@ regresa el API sea matemáticamente correcto.
 > ver [`docs/GIT.md`](docs/GIT.md). Aprendizajes del proyecto (lenguajes,
 > conceptos, trabajar con IA), listos para defender en una entrevista:
 > ver [`docs/APRENDIZAJES.md`](docs/APRENDIZAJES.md).
+>
+> **Toda la documentación consolidada en un solo documento bilingüe
+> (español + inglés), listo para imprimir o compartir:**
+> [`docs/DOCUMENTACION_COMPLETA.pdf`](docs/DOCUMENTACION_COMPLETA.pdf)
+> (también disponible como
+> [`.docx`](docs/DOCUMENTACION_COMPLETA.docx) editable).
 
 ---
 
