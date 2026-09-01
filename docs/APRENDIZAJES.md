@@ -70,7 +70,7 @@ another?".
 
 ## 5. ES: Casos reales — errores que tuve y cómo se corrigieron
 
-Estos son cuatro casos concretos que pasaron en la práctica, no riesgos
+Estos son cinco casos concretos que pasaron en la práctica, no riesgos
 teóricos — vale la pena poder contarlos en una entrevista tal cual, con
 los mensajes de error reales incluidos.
 
@@ -277,6 +277,58 @@ entregarla — este bug pasó *todas* las pruebas automatizadas de la
 sesión, porque ninguna comparaba el texto contra el carácter exacto
 esperado, solo contra la estructura de la respuesta.
 
+### 5.5 El resumen mensual "no se actualizaba" — eran dos bugs distintos, uno escondiendo al otro
+
+**Qué pasó:** el usuario creó un registro nuevo desde la pestaña
+"Registros" y, al entrar a "Resumen mensual" sin tocar el selector de
+mes (que ya decía el mes correcto), seguía viendo los números de antes
+de crear el registro.
+
+**Bug real #1 — el resumen nunca se refrescaba solo:**
+`loadSummary()` solo se llamaba cuando el `<input type="month">` o el
+selector de consultor disparaban su evento `change` — es decir, cuando
+el *valor* cambiaba. Cambiar de pestaña no volvía a pedir nada, y
+crear/borrar un registro tampoco. Si el mes que ya estaba seleccionado
+era el correcto, no había ningún evento que disparara una nueva
+petición. Corregido en dos frentes: `activate(tabName)` en `main.js`
+ahora refresca el panel que se muestra cada vez que se cambia de
+pestaña, y crear/borrar un registro en `records.js` también llama a
+`loadSummary()` directamente.
+
+**Bug (o más bien trampa) #2 — mi primera prueba automatizada del
+arreglo seguía "fallando":** al escribir una prueba con Chrome DevTools
+Protocol para confirmar el arreglo del bug #1, la primera corrida
+seguía sin mostrar el número actualizado — parecía que la corrección no
+había funcionado. Revisando el tráfico de red real de la prueba, la
+petición `GET summary.php` simplemente **no se disparaba** después de
+crear el registro, como si el código nuevo no existiera. La causa:
+Apache sirve los archivos `.js`/`.css` sin ninguna cabecera de caché
+explícita (solo `Last-Modified`/`ETag` por defecto), así que el
+navegador de la prueba —que reusaba un perfil con caché de una corrida
+anterior— seguía ejecutando la versión de `records.js` **de antes** de
+la corrección, sin enterarse de que el archivo ya había cambiado en el
+servidor. Con un perfil de navegador completamente nuevo (sin caché
+previo), la misma prueba pasó a la primera.
+
+**Cómo se corrigió esto último:** en vez de acordarme de limpiar caché
+cada vez (frágil), se agregó `frontend/.htaccess` con
+`Cache-Control: no-cache, must-revalidate` para `.js`/`.css` — el
+navegador sigue guardando una copia, pero la revalida contra el
+servidor (con `ETag`) antes de usarla en cada carga, así que un archivo
+sin cambios sigue cargando rápido (`304 Not Modified`) y uno que sí
+cambió se nota de inmediato, sin depender de que alguien haga un
+refresco forzado.
+
+**El aprendizaje que vale la pena quedarse:** cuando una corrección
+"no funciona" en la prueba, la primera pregunta no debería ser
+"¿qué tiene mal el código nuevo?", sino "¿estoy seguro de que el
+navegador está corriendo el código nuevo?" — sobre todo en un proyecto
+sin build step ni bundler, donde no hay ningún paso que invalide la
+caché por ti. Y para quien esté probando esta misma aplicación con una
+pestaña ya abierta desde antes de una corrección: un refresco forzado
+(Ctrl+Shift+R) sigue siendo la manera más rápida de estar seguro de que
+se está viendo el código actual.
+
 ## 6. ES: Frontend / EN: Frontend
 
 - **SPA sin framework:** cambiar de pestaña (`main.js::initTabs`) es solo `classList.toggle('active', ...)` sobre los paneles que ya están en el DOM — no hace falta un router ni un framework de componentes para dos vistas.
@@ -320,7 +372,7 @@ solo escribas el código") fue lo que lo activó.
 
 ### 8.2 Encontrar errores de la IA por evidencia, no por sospecha
 
-Cuatro ejemplos concretos de esta misma sesión:
+Cinco ejemplos concretos de esta misma sesión:
 
 1. **El gráfico de barras del resumen** se veía con las tres barras casi
    idénticas en una captura de pantalla, aunque representaban 100%, 54% y
@@ -346,6 +398,13 @@ Cuatro ejemplos concretos de esta misma sesión:
    prueba más clara de todo el proyecto de que revisar con evidencia
    automatizada reduce el riesgo, pero no reemplaza que un humano abra
    la aplicación real al final.
+5. **Mi propia primera prueba automatizada del arreglo del resumen
+   mensual** (`§5.5`) también reportó éxito de forma engañosa la primera
+   vez: no porque el arreglo funcionara, sino porque el navegador de la
+   prueba tenía en caché una versión vieja de `records.js` de una corrida
+   anterior, y ni siquiera intentaba llamar al código nuevo. Solo se
+   detectó revisando el tráfico de red real (no el resultado final) y
+   confirmándolo con un navegador sin caché previo.
 
 ### 8.3 Pedir explícitamente lo que no es "solo código"
 
@@ -390,7 +449,8 @@ cada una tiene sentido, no solo repetir el texto.
 | "¿Cómo protegiste contra CSRF/XSS/inyección SQL?" | `NOTES.md` §1.3, §1.6, §1.9 |
 | "¿Por qué está todo en `public/`, `database/`, `backend/`...?" | `docs/DOCUMENTACION.md` §2 + `NOTES.md` §1.12 |
 | "¿Por qué tantos commits chicos en vez de uno?" | `docs/GIT.md` completo |
-| "Cuéntame de un bug real que hayas resuelto" | §5.1 (error `#1701` de phpMyAdmin), §5.2 (desfase de reloj PHP/MySQL), §5.3 (PowerShell + `2>&1`) y §5.4 (acentos corruptos por codificación) — los cuatro con causa raíz y corrección, no solo el síntoma |
-| "¿Las pruebas automatizadas lo detectan todo?" | §5.4 y §8.2 (punto 4) — un caso real donde no fue así, y qué se hizo distinto después |
+| "Cuéntame de un bug real que hayas resuelto" | §5.1 (error `#1701` de phpMyAdmin), §5.2 (desfase de reloj PHP/MySQL), §5.3 (PowerShell + `2>&1`), §5.4 (acentos corruptos por codificación) y §5.5 (resumen que no se refrescaba + caché del navegador) — los cinco con causa raíz y corrección, no solo el síntoma |
+| "¿Las pruebas automatizadas lo detectan todo?" | §5.4, §5.5 y §8.2 — dos casos reales donde no fue así, y qué se hizo distinto después |
+| "¿Cómo evitas que el navegador sirva JS/CSS viejo después de un cambio?" | `frontend/.htaccess` — `Cache-Control: no-cache, must-revalidate`, explicado en §5.5 |
 | "¿Tienes pruebas automatizadas, o todo fue manual?" | `scripts/test_api.py` (15 pruebas, `unittest`) + `scripts/check_all.sh`/`.ps1` — §8.2 y §8.3 de `docs/DOCUMENTACION.md` |
 | "¿Cómo evitas fuerza bruta en el login?" | `NOTES.md` §1.7 — bloqueo por usuario persistido en BD, no por sesión de navegador |

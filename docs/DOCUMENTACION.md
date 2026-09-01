@@ -272,6 +272,26 @@ es siempre el mismo, sin importar cómo se llegó ahí.
 No hay build step ni framework: cada archivo agrega funciones/constantes al
 alcance global (`window`), suficiente para el tamaño de este proyecto.
 
+**Cuándo se recarga cada panel:** `main.js::activate(tabName)` vuelve a
+pedir los datos del panel que se muestra (`loadRecords()` /
+`loadSummary()`) **cada vez que se cambia de pestaña**, no solo la
+primera vez — y `records.js` llama a `loadSummary()` también justo
+después de crear o borrar un registro, para que las tarjetas de KPI
+nunca se queden con un número viejo aunque el usuario no cambie de
+pestaña. Antes de esto, cambiar de pestaña o crear/borrar un registro no
+disparaba ninguna petición nueva; solo se refrescaba cuando el selector
+de mes o de consultor cambiaba de *valor* — ver el caso real en
+`docs/APRENDIZAJES.md` §5.5.
+
+**Por qué `frontend/.htaccess` fuerza `Cache-Control: no-cache` en
+`.js`/`.css`:** sin eso, Apache sirve esos archivos solo con
+`Last-Modified`/`ETag`, y un navegador puede seguir usando una copia
+vieja de un archivo que ya cambió en el servidor sin volver a
+preguntar. `no-cache` no desactiva el caché: el navegador sigue
+guardando una copia, pero siempre la revalida contra el servidor antes
+de usarla (rápido si no cambió — `304 Not Modified` — inmediato si sí
+cambió). También documentado en `docs/APRENDIZAJES.md` §5.5.
+
 ### 6.3 Control de acceso reflejado en la UI
 
 La UI oculta/ajusta elementos según el rol (columna "Consultor" en la
