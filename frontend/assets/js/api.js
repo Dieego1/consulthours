@@ -36,7 +36,8 @@ async function apiRequest(path, { method = 'GET', body = null } = {}) {
     payload = JSON.stringify(body);
   }
   if (method !== 'GET') {
-    // ES/EN: ver backend/includes/functions.php::require_same_origin_header
+    // ES: ver backend/includes/functions.php::require_same_origin_header
+    // EN: see backend/includes/functions.php::require_same_origin_header
     headers['X-Requested-With'] = 'ConsultHours';
   }
 

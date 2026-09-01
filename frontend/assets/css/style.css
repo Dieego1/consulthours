@@ -1,10 +1,10 @@
 /* =====================================================================
-   ConsultHours — Hoja de estilos principal
-   ConsultHours — Main stylesheet
-   Layout, tipografía, componentes. Las animaciones/keyframes 3D viven en
-   animations.css para mantener esto legible.
-   Layout, typography, components. 3D animations/keyframes live in
-   animations.css to keep this file readable.
+   ES: ConsultHours — Hoja de estilos principal. Layout, tipografía y
+       componentes. Las animaciones/keyframes 3D viven en animations.css
+       para mantener este archivo legible.
+   EN: ConsultHours — Main stylesheet. Layout, typography, components.
+       3D animations/keyframes live in animations.css to keep this file
+       readable.
    ===================================================================== */
 
 :root {
@@ -53,7 +53,8 @@ body {
 }
 
 /* ---------------------------------------------------------------------
-   Fondo animado / Animated background
+   ES: Fondo animado
+   EN: Animated background
    --------------------------------------------------------------------- */
 .bg-scene {
   position: fixed;
@@ -80,7 +81,8 @@ body {
 .shape-3 { width: 220px; height: 220px; top: 45%; left: 60%; background: linear-gradient(135deg, var(--accent-ok), var(--accent)); }
 
 /* ---------------------------------------------------------------------
-   Layout general / General layout
+   ES: Layout general
+   EN: General layout
    --------------------------------------------------------------------- */
 .app {
   position: relative;
@@ -97,7 +99,8 @@ body {
 }
 
 /* ---------------------------------------------------------------------
-   Tarjetas con efecto vidrio + 3D / Glass cards with 3D effect
+   ES: Tarjetas con efecto vidrio + 3D
+   EN: Glass cards with 3D effect
    --------------------------------------------------------------------- */
 .card, .card-3d {
   background: var(--glass);
@@ -121,7 +124,8 @@ body {
 }
 
 /* ---------------------------------------------------------------------
-   Login
+   ES: Login
+   EN: Login
    --------------------------------------------------------------------- */
 .login-scene {
   min-height: 100vh;
@@ -174,7 +178,8 @@ body {
 }
 
 /* ---------------------------------------------------------------------
-   Formularios / Forms
+   ES: Formularios
+   EN: Forms
    --------------------------------------------------------------------- */
 .field {
   display: flex;
@@ -234,7 +239,8 @@ body {
 }
 
 /* ---------------------------------------------------------------------
-   Botones con relieve 3D / Buttons with 3D relief
+   ES: Botones con relieve 3D
+   EN: Buttons with 3D relief
    --------------------------------------------------------------------- */
 .btn {
   border: none;
@@ -273,7 +279,8 @@ body {
 .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
 
 /* ---------------------------------------------------------------------
-   Topbar + tabs
+   ES: Barra superior + pestañas
+   EN: Topbar + tabs
    --------------------------------------------------------------------- */
 .topbar {
   display: flex;
@@ -349,7 +356,8 @@ body {
 .badge.role-admin { color: var(--accent-warn); }
 
 /* ---------------------------------------------------------------------
-   Panel de búsqueda / Search panel
+   ES: Panel de búsqueda
+   EN: Search panel
    --------------------------------------------------------------------- */
 .search-row {
   display: flex;
@@ -365,7 +373,8 @@ body {
 }
 
 /* ---------------------------------------------------------------------
-   Tabla de datos / Data table
+   ES: Tabla de datos
+   EN: Data table
    --------------------------------------------------------------------- */
 .table-scroll { overflow-x: auto; }
 
@@ -415,7 +424,8 @@ body {
 .pill-overlap { background: rgba(245, 158, 11, 0.18); color: var(--accent-warn); }
 
 /* ---------------------------------------------------------------------
-   Gráfico de barras del resumen / Summary bar chart
+   ES: Gráfico de barras del resumen
+   EN: Summary bar chart
    --------------------------------------------------------------------- */
 .summary-chart {
   display: flex;
@@ -448,7 +458,8 @@ body {
 }
 
 /* ---------------------------------------------------------------------
-   Toasts
+   ES: Notificaciones tipo "toast"
+   EN: Toast notifications
    --------------------------------------------------------------------- */
 .toast-container {
   position: fixed;
@@ -478,7 +489,8 @@ body {
 [data-role="admin"] th.admin-only { display: table-cell; }
 
 /* ---------------------------------------------------------------------
-   Responsive
+   ES: Responsivo (pantallas pequeñas)
+   EN: Responsive (small screens)
    --------------------------------------------------------------------- */
 @media (max-width: 640px) {
   .shell { padding: 16px 12px 40px; }

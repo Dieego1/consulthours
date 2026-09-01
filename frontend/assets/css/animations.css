@@ -1,14 +1,15 @@
 /* =====================================================================
-   ConsultHours — Animaciones 3D
-   ConsultHours — 3D animations
-   Solo se anima `transform` y `opacity` (aceleradas por GPU) para que la
-   interfaz se sienta fluida y sin "lag" incluso con muchas tarjetas.
-   Only `transform` and `opacity` are animated (GPU-accelerated) so the
-   UI feels fluid and lag-free even with many cards on screen.
+   ES: ConsultHours — Animaciones 3D. Solo se anima `transform` y
+       `opacity` (aceleradas por GPU) para que la interfaz se sienta
+       fluida y sin "lag" incluso con muchas tarjetas en pantalla.
+   EN: ConsultHours — 3D animations. Only `transform` and `opacity` are
+       animated (GPU-accelerated) so the UI feels fluid and lag-free
+       even with many cards on screen.
    ===================================================================== */
 
 /* ---------------------------------------------------------------------
-   Fondo: formas flotando en 3D / Background: shapes floating in 3D
+   ES: Fondo — formas flotando en 3D
+   EN: Background — shapes floating in 3D
    --------------------------------------------------------------------- */
 @keyframes float-3d {
   0%   { transform: translate3d(0, 0, 0) rotate3d(1, 1, 0, 0deg); }
@@ -21,7 +22,8 @@
 .shape-3 { animation-duration: 14s; animation-delay: -8s; }
 
 /* ---------------------------------------------------------------------
-   Tarjeta de login: entra con un giro 3D / Login card: 3D flip entrance
+   ES: Tarjeta de login — entra con un giro 3D
+   EN: Login card — 3D flip entrance
    --------------------------------------------------------------------- */
 @keyframes card-flip-in {
   0%   { opacity: 0; transform: perspective(1200px) rotateX(-35deg) translateY(40px) scale(0.92); }
@@ -36,7 +38,8 @@
 }
 
 /* ---------------------------------------------------------------------
-   Paneles: aparecen con leve profundidad / Panels: subtle depth entrance
+   ES: Paneles — aparecen con leve profundidad
+   EN: Panels — subtle depth entrance
    --------------------------------------------------------------------- */
 @keyframes panel-rise {
   0%   { opacity: 0; transform: translateY(18px) translateZ(-30px) rotateX(6deg); }
@@ -49,8 +52,8 @@
 .tab-panel.active .panel:nth-child(3) { animation-delay: 0.15s; }
 
 /* ---------------------------------------------------------------------
-   Inclinación 3D con el mouse (clase aplicada por main.js) /
-   Mouse-driven 3D tilt (class applied by main.js)
+   ES: Inclinación 3D con el mouse (clase aplicada por main.js)
+   EN: Mouse-driven 3D tilt (class applied by main.js)
    --------------------------------------------------------------------- */
 .card-3d {
   transform: perspective(1000px) rotateX(var(--ry, 0deg)) rotateY(var(--rx, 0deg)) translateZ(0);
@@ -64,8 +67,8 @@
 }
 
 /* ---------------------------------------------------------------------
-   Cambio de pestañas: giro 3D tipo "flip card" /
-   Tab switch: 3D "flip card" style transition
+   ES: Cambio de pestañas — giro 3D tipo "flip card"
+   EN: Tab switch — 3D "flip card" style transition
    --------------------------------------------------------------------- */
 .tab-panel {
   display: none;
@@ -81,7 +84,8 @@
 }
 
 /* ---------------------------------------------------------------------
-   Filas de tabla: entrada escalonada / Table rows: staggered entrance
+   ES: Filas de tabla — entrada escalonada
+   EN: Table rows — staggered entrance
    --------------------------------------------------------------------- */
 @keyframes row-in {
   0%   { opacity: 0; transform: translateY(8px) translateZ(-10px); }
@@ -100,8 +104,8 @@
 .data-table tbody tr:nth-child(n+8)  { animation-delay: calc(0.02s * 8); }
 
 /* ---------------------------------------------------------------------
-   Formulario de nuevo registro: despliegue 3D /
-   New-record form: 3D unfold
+   ES: Formulario de nuevo registro — despliegue 3D
+   EN: New-record form — 3D unfold
    --------------------------------------------------------------------- */
 @keyframes unfold-3d {
   0%   { opacity: 0; transform: perspective(900px) rotateX(-18deg) scaleY(0.9); transform-origin: top center; max-height: 0; }
@@ -110,8 +114,8 @@
 .record-form:not([hidden]) { animation: unfold-3d 0.4s var(--ease) both; }
 
 /* ---------------------------------------------------------------------
-   Toasts: entran deslizando con rotación /
-   Toasts: slide in with a slight rotation
+   ES: Toasts — entran deslizando con una leve rotación
+   EN: Toasts — slide in with a slight rotation
    --------------------------------------------------------------------- */
 @keyframes toast-in {
   0%   { opacity: 0; transform: perspective(600px) rotateX(-40deg) translateY(-16px); }
@@ -125,12 +129,14 @@
 .toast.leaving { animation: toast-out 0.25s var(--ease) both; }
 
 /* ---------------------------------------------------------------------
-   Barras del resumen: crecen al cargar / Summary bars: grow on load
+   ES: Barras del resumen — crecen al cargar
+   EN: Summary bars — grow on load
    --------------------------------------------------------------------- */
 .chart-row { animation: row-in 0.4s var(--ease) both; }
 
 /* ---------------------------------------------------------------------
-   Insignia de traslape: pulso sutil / Overlap badge: subtle pulse
+   ES: Insignia de traslape — pulso sutil
+   EN: Overlap badge — subtle pulse
    --------------------------------------------------------------------- */
 @keyframes pulse-warn {
   0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.35); }
@@ -139,8 +145,8 @@
 .pill-overlap { animation: pulse-warn 1.8s ease-in-out infinite; }
 
 /* ---------------------------------------------------------------------
-   Accesibilidad: respetar "reducir movimiento" /
-   Accessibility: respect "reduce motion"
+   ES: Accesibilidad — respeta la preferencia "reducir movimiento"
+   EN: Accessibility — respects the "reduce motion" preference
    --------------------------------------------------------------------- */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
