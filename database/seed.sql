@@ -84,6 +84,20 @@ CREATE TABLE IF NOT EXISTS time_records (
 ) ENGINE=InnoDB;
 
 -- ---------------------------------------------------------------------
+-- ES: Tabla: login_attempts -- Bloqueo de fuerza bruta por usuario,
+--     persistido en BD (backend/api/auth/login.php).
+-- EN: Table: login_attempts -- Per-username brute-force lockout,
+--     persisted in the DB (backend/api/auth/login.php).
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS login_attempts (
+    id           INT AUTO_INCREMENT PRIMARY KEY,
+    username     VARCHAR(50) NOT NULL,
+    ip_address   VARCHAR(45) NOT NULL,
+    attempted_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_username_time (username, attempted_at)
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------------------
 -- ES: Datos de prueba / EN: Seed data
 --
 -- ES: No hace falta TRUNCATE aqui: como el script empezo con DROP

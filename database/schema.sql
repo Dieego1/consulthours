@@ -76,3 +76,21 @@ CREATE TABLE IF NOT EXISTS time_records (
     INDEX idx_consultant_date (consultant_id, work_date),
     INDEX idx_client_date (client_id, work_date)
 ) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------------------
+-- ES: Tabla: login_attempts -- Registro de intentos de login fallidos,
+--     usado por backend/api/auth/login.php para bloquear por
+--     fuerza bruta por USUARIO (no por sesión de navegador: antes, borrar
+--     la cookie reiniciaba el contador; ahora persiste en la base).
+-- EN: Table: login_attempts -- Log of failed login attempts, used by
+--     backend/api/auth/login.php to throttle brute-force attempts PER
+--     USERNAME (not per browser session: before, clearing the cookie
+--     reset the counter; now it persists in the database).
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS login_attempts (
+    id           INT AUTO_INCREMENT PRIMARY KEY,
+    username     VARCHAR(50) NOT NULL,
+    ip_address   VARCHAR(45) NOT NULL,
+    attempted_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_username_time (username, attempted_at)
+) ENGINE=InnoDB;
