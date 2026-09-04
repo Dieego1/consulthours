@@ -168,14 +168,28 @@ function initRecordForm() {
     };
 
     try {
-      const result = await api.post('/records.php', payload);
+      await api.post('/records.php', payload);
       showToast('Registro guardado.', 'ok');
-      if (result.warning) showToast(result.warning, 'warn');
       form.reset();
       form.hidden = true;
       loadRecords();
       loadSummary(); // ES: mismo motivo que en deleteRecord() / EN: same reason as in deleteRecord()
     } catch (err) {
+      // ES: Decisión de negocio (ver NOTES.md §2.1): un traslape de
+      //     horario ahora lo rechaza el backend con 409, y llega aquí
+      //     como cualquier otro error de validación -- se avisa con un
+      //     toast (bien visible) y con el texto en rojo del formulario,
+      //     y el registro NO se guarda: el formulario se queda abierto,
+      //     con lo que la persona ya había escrito, para que corrija el
+      //     horario sin tener que volver a capturar todo.
+      // EN: Business decision (see NOTES.md §2.1): a schedule overlap is
+      //     now rejected by the backend with a 409, and arrives here like
+      //     any other validation error -- it's surfaced with a toast
+      //     (clearly visible) and the form's red error text, and the
+      //     record is NOT saved: the form stays open, with what the
+      //     person had already typed, so they can fix the time without
+      //     retyping everything.
+      showToast(err.message, 'error');
       errorEl.textContent = err.message;
       errorEl.hidden = false;
     }

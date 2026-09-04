@@ -130,19 +130,25 @@ function handle_list(PDO $pdo, array $user): void
 }
 
 /**
- * ES: Decisión de negocio (ver NOTES.md): los traslapes de horario del
- *     mismo consultor en el mismo día NO se bloquean al crear el registro
- *     (un consultor puede tener razones legítimas: cambios de contexto
- *     rápidos, solapamiento real de reuniones, corrección posterior). En
- *     su lugar, se detectan y se marcan aquí para que se muestren
- *     visualmente en el frontend y el propio consultor o un admin puedan
- *     revisarlos.
- * EN: Business decision (see NOTES.md): same-consultant, same-day time
- *     overlaps are NOT blocked when creating a record (a consultant may
- *     have legitimate reasons: fast context switching, genuinely
- *     overlapping meetings, later correction). Instead they are detected
- *     and flagged here so the frontend can surface them visually for the
- *     consultant or an admin to review.
+ * ES: Decisión de negocio (actualizada — ver NOTES.md §2.1): a partir de
+ *     ahora, crear un registro nuevo que se traslapa en horario con otro
+ *     del mismo consultor el mismo día está BLOQUEADO (ver
+ *     handle_create()) — se avisa y no se guarda nada. Esta función
+ *     (mark_overlaps) sigue existiendo para marcar visualmente, al listar
+ *     registros, cualquier traslape que ya exista en los datos por otra
+ *     vía (por ejemplo el ejemplo de seed del 6 de agosto, sembrado
+ *     directo en la base, no a través de este endpoint) — es la capa de
+ *     "detectar y mostrar lo que ya existe", separada de la capa de
+ *     "impedir que se cree algo nuevo".
+ * EN: Business decision (updated — see NOTES.md §2.1): creating a new
+ *     record that overlaps in schedule with another one from the same
+ *     consultant on the same day is now BLOCKED (see handle_create()) —
+ *     it's flagged and nothing gets saved. This function (mark_overlaps)
+ *     still exists to visually flag, when listing records, any overlap
+ *     that already exists in the data through some other path (e.g. the
+ *     August 6th seed example, inserted directly into the database, not
+ *     through this endpoint) — it's the "detect and surface what already
+ *     exists" layer, separate from the "prevent something new" layer.
  */
 function mark_overlaps(array &$records): void
 {
@@ -231,6 +237,40 @@ function handle_create(PDO $pdo, array $user): void
     // log hours (and billing) under another consultant's name.
     $consultantId = (int) $user['id'];
 
+    // ES: Decisión de negocio (actualizada — ver NOTES.md §2.1): un
+    //     traslape de horario del mismo consultor el mismo día ahora
+    //     BLOQUEA la creación del registro; se avisa y NO se guarda nada.
+    //     Por eso esta comprobación va ANTES del INSERT, no después.
+    //     mark_overlaps() (usado por handle_list()) se conserva para
+    //     seguir marcando visualmente cualquier traslape que ya exista en
+    //     los datos (p. ej. el ejemplo de seed del 6 de agosto) — esto
+    //     solo impide que se creen traslapes NUEVOS desde este endpoint.
+    // EN: Business decision (updated — see NOTES.md §2.1): a same-day,
+    //     same-consultant schedule overlap now BLOCKS the record from
+    //     being created; it's flagged and NOTHING is saved. That's why
+    //     this check runs BEFORE the INSERT, not after. mark_overlaps()
+    //     (used by handle_list()) stays in place to keep visually
+    //     flagging any overlap that already exists in the data (e.g. the
+    //     August 6th seed example) — this only stops NEW overlaps from
+    //     being created through this endpoint.
+    $overlapStmt = $pdo->prepare(
+        'SELECT id, client_id, start_time, end_time
+         FROM time_records
+         WHERE consultant_id = ? AND work_date = ?
+           AND start_time < ? AND ? < end_time'
+    );
+    $overlapStmt->execute([$consultantId, $workDate, $endTime, $startTime]);
+    $conflict = $overlapStmt->fetch();
+
+    if ($conflict !== false) {
+        json_error(
+            'Este horario se traslapa con otro registro tuyo del mismo día '
+            . '(' . $conflict['start_time'] . '–' . $conflict['end_time'] . '). '
+            . 'Ajusta el horario o borra/edita el registro existente antes de guardar.',
+            409
+        );
+    }
+
     $insert = $pdo->prepare(
         'INSERT INTO time_records
             (consultant_id, client_id, work_date, start_time, end_time, hours, description, billable)
@@ -239,26 +279,7 @@ function handle_create(PDO $pdo, array $user): void
     $insert->execute([$consultantId, $clientId, $workDate, $startTime, $endTime, $hours, $description, $billable]);
     $newId = (int) $pdo->lastInsertId();
 
-    // ES: Revisamos si el nuevo registro se traslapa con otro del mismo
-    //     consultor el mismo día, para devolver una advertencia (no un
-    //     error) — ver mark_overlaps() y la decisión en NOTES.md.
-    // EN: Check whether the new record overlaps another one from the same
-    //     consultant on the same day, to return a warning (not an error)
-    //     — see mark_overlaps() and the decision in NOTES.md.
-    $overlapStmt = $pdo->prepare(
-        'SELECT id FROM time_records
-         WHERE consultant_id = ? AND work_date = ? AND id != ?
-           AND start_time < ? AND ? < end_time'
-    );
-    $overlapStmt->execute([$consultantId, $workDate, $newId, $endTime, $startTime]);
-    $hasOverlap = $overlapStmt->fetch() !== false;
-
-    json_response([
-        'id' => $newId,
-        'warning' => $hasOverlap
-            ? 'Este registro se traslapa en horario con otro registro tuyo del mismo día.'
-            : null,
-    ], 201);
+    json_response(['id' => $newId], 201);
 }
 
 // =========================================================================

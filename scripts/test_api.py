@@ -271,10 +271,18 @@ class SummaryVisibilityTests(unittest.TestCase):
 
 
 class OverlapDetectionTests(unittest.TestCase):
-    """ES: Decisión de negocio: traslapes se marcan, no se bloquean
-           (NOTES.md §2.1), usando el ejemplo real del 6 de agosto.
-       EN: Business decision: overlaps are flagged, not blocked
-           (NOTES.md §2.1), using the real August 6th example."""
+    """ES: Decisión de negocio (actualizada -- ver NOTES.md §2.1): crear un
+           registro nuevo que se traslapa con otro del mismo consultor el
+           mismo día está BLOQUEADO (409, no se guarda nada). El ejemplo
+           real del 6 de agosto (sembrado directo en la BD, no por este
+           endpoint) sigue existiendo en los datos y se sigue marcando
+           visualmente al listar -- eso no cambió, solo la creación.
+       EN: Business decision (updated -- see NOTES.md §2.1): creating a
+           new record that overlaps another one from the same consultant
+           on the same day is BLOCKED (409, nothing gets saved). The real
+           August 6th example (seeded straight into the DB, not through
+           this endpoint) still exists in the data and still gets flagged
+           when listing -- that didn't change, only creation did."""
 
     def test_august_6th_carla_records_are_flagged_as_overlapping(self):
         carla = login_as("carla")
@@ -284,8 +292,11 @@ class OverlapDetectionTests(unittest.TestCase):
         self.assertEqual(len(aug6), 2, "Deberían existir los dos registros traslapados del seed")
         self.assertTrue(all(r["overlaps"] for r in aug6), "Ambos deben quedar marcados overlaps=true")
 
-    def test_creating_an_overlapping_record_warns_but_does_not_block(self):
+    def test_creating_an_overlapping_record_is_blocked_and_not_saved(self):
         carla = login_as("carla")
+        status, before = carla.get("/records.php?month=2026-07")
+        count_before = len(before["records"])
+
         status, body = carla.post("/records.php", {
             "client_id": 1,
             "work_date": "2026-07-02",  # ya existe un registro de carla 09:00-12:00 ese día
@@ -294,11 +305,14 @@ class OverlapDetectionTests(unittest.TestCase):
             "description": "TEST-AUTOMATION-overlap",
             "billable": True,
         })
-        try:
-            self.assertEqual(status, 201, "El traslape debe advertir, no bloquear la creación")
-            self.assertIsNotNone(body.get("warning"), "Debe venir un mensaje de advertencia")
-        finally:
-            login_as("admin").delete(f"/records.php?id={body['id']}")
+        self.assertEqual(status, 409, "El traslape debe rechazar la creación con 409")
+        self.assertIn("traslapa", body.get("error", ""), "El mensaje debe explicar que es un traslape")
+
+        _, after = carla.get("/records.php?month=2026-07")
+        self.assertEqual(
+            len(after["records"]), count_before,
+            "No debe haberse guardado ningún registro nuevo",
+        )
 
 
 class SqlInjectionTests(unittest.TestCase):
