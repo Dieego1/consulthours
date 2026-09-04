@@ -14,7 +14,9 @@ regresa el API sea matemáticamente correcto.
 > Sobre por qué este proyecto usa Git y qué significa cada commit:
 > ver [`docs/GIT.md`](docs/GIT.md). Aprendizajes del proyecto (lenguajes,
 > conceptos, trabajar con IA), listos para defender en una entrevista:
-> ver [`docs/APRENDIZAJES.md`](docs/APRENDIZAJES.md).
+> ver [`docs/APRENDIZAJES.md`](docs/APRENDIZAJES.md). Qué se dejó fuera a
+> propósito y qué se implementaría si esto pasara a producción:
+> ver [`docs/MEJORAS_FUTURAS.md`](docs/MEJORAS_FUTURAS.md).
 >
 > **Toda la documentación consolidada en un solo documento bilingüe
 > (español + inglés), listo para imprimir o compartir:**
