@@ -42,12 +42,16 @@ distintas a la vez desde la misma IP. En producción, agregaría esa capa
 aparte (ej. un *reverse proxy* con límite de tasa, o fail2ban) — es
 infraestructura, no código de la aplicación.
 
-## 6. Notificar el traslape de horario con más contexto
+## 6. Más contexto en la insignia "⚠ traslape" del listado
 
-Hoy la insignia "⚠ traslape" solo avisa que existe un cruce. Sería más
-útil que, al pasar el mouse (o en el detalle), mostrara *con cuál otro
-registro* se traslapa y en qué rango exacto de horas — ahora mismo hay
-que buscarlo a ojo entre las filas del mismo día.
+Desde que crear un registro traslapado se bloquea (ver `NOTES.md` §2.1),
+el mensaje de error al capturar ya dice con qué horario exacto choca. Lo
+que falta es lo mismo pero en el **listado**: la insignia "⚠ traslape" de
+un registro que ya existe (por ejemplo, el ejemplo de seed del 6 de
+agosto, que nunca pasó por la validación de creación) solo avisa que hay
+un cruce — hay que buscar a ojo entre las filas del mismo día para
+encontrar con cuál. Agregaría un tooltip o un enlace que señale
+directamente el otro registro.
 
 ## 7. Variables de entorno para configuración sensible
 

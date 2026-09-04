@@ -178,22 +178,31 @@ Utilidades compartidas: `json_response()`, `json_error()`,
 `read_json_body()` y `require_same_origin_header()` (mitigación CSRF, ver
 `NOTES.md` §1.6).
 
-### 4.4 Detección de traslapes (`records.php`)
+### 4.4 Detección y bloqueo de traslapes (`records.php`)
 
-`mark_overlaps()` agrupa los registros ya cargados por
-`consultant_id + work_date` y compara pares de horarios con la fórmula
-clásica de solapamiento de intervalos:
+Dos mecanismos relacionados pero distintos, usando la misma fórmula
+clásica de solapamiento de intervalos (`start1 < end2 && start2 < end1`):
 
-```php
-$r1['start_time'] < $r2['end_time'] && $r2['start_time'] < $r1['end_time']
-```
+- **Al listar (`mark_overlaps()`):** agrupa los registros ya cargados por
+  `consultant_id + work_date` y compara pares de horarios. Si se
+  solapan, ambos quedan marcados `overlaps: true` en la respuesta JSON, y
+  el frontend los pinta con una insignia "⚠ traslape". Esto es
+  **detección/visualización** de traslapes que ya existen en los datos
+  (por ejemplo, el ejemplo del 6 de agosto en `seed_data.json`).
 
-Si se solapan, ambos quedan marcados `overlaps: true` en la respuesta JSON,
-y el frontend los pinta con una insignia "⚠ traslape". Al **crear** un
-registro se hace la misma comprobación contra la base de datos
-directamente (no contra la lista ya cargada en memoria) para devolver un
-`warning` en la respuesta del POST. Ver la justificación de por qué esto
-no bloquea la creación en `NOTES.md` §2.1.
+  ```php
+  $r1['start_time'] < $r2['end_time'] && $r2['start_time'] < $r1['end_time']
+  ```
+
+- **Al crear (`handle_create()`):** hace la misma comprobación contra la
+  base de datos, **antes** del `INSERT`. Si encuentra un traslape,
+  responde `409 Conflict` con un mensaje que incluye el horario exacto
+  con el que choca, y **no inserta nada**. Esto es **prevención**: impide
+  que se cree un traslape nuevo, sin afectar a los que ya existían por
+  otra vía (como el dato de seed, que nunca pasó por este endpoint).
+
+Ver la justificación completa de por qué se decidió bloquear (y no solo
+avisar, que fue la primera versión) en `NOTES.md` §2.1.
 
 ### 4.5 `summary.php`: cómo se calcula el resumen
 

@@ -217,34 +217,64 @@ En los datos de prueba, `carla` tiene dos registros el 2026-08-06: uno en
 Acme Corp de 09:00–12:00 y otro en Globex Industries de 11:00–13:00 (se
 traslapan de 11:00 a 12:00).
 
-**Decisión: no bloquear el registro traslapado; detectarlo y marcarlo
-visualmente como advertencia**, tanto en la respuesta de creación
-(`backend/api/records.php::handle_create`, campo `warning`) como en el
-listado (`mark_overlaps()`, campo `overlaps` por registro, mostrado en la
-UI como una insignia "⚠ traslape").
+**Decisión final: bloquear la creación de un registro nuevo si se
+traslapa en horario con otro del mismo consultor el mismo día.** El
+backend responde `409 Conflict` con un mensaje explicando exactamente con
+qué otro horario choca, y **no guarda nada** — ver
+`backend/api/records.php::handle_create()`. En el frontend, eso se ve
+como una alerta clara (toast + texto en rojo en el formulario) y el
+formulario se queda abierto con lo ya escrito, para que la persona
+corrija el horario sin volver a capturar todo.
 
-**Por qué:**
-- Un consultor puede tener razones legítimas para registrar horas
-  traslapadas: cambio rápido de contexto entre dos clientes, una llamada
-  que efectivamente se solapó con otra reunión, o una corrección posterior
-  de un registro que aún no ha borrado el original.
-- Bloquear por completo el registro (rechazar el POST) le quita al
-  consultor la capacidad de dejar constancia de lo que realmente pasó, y
-  convierte un problema de **datos que hay que revisar** en un problema de
-  **flujo de trabajo roto**.
-- La alternativa de "recortar" automáticamente las horas para que no se
-  traslapen es peor: decide silenciosamente cuál de los dos registros es
-  el "correcto", lo cual no le corresponde al sistema.
-- En cambio, marcar y dejar visible el traslape (tanto al propio consultor
-  como a un admin que revise el resumen) da la información necesaria para
-  que un humano decida — que es lo que de hecho pide el ejercicio al
-  incluir este caso en los datos de prueba, en vez de simplemente prohibirlo.
+> **Nota:** esta decisión se revisó una vez ya construido el sistema. La
+> primera versión (documentada más abajo, en "Versión anterior") permitía
+> guardar el traslape y solo lo marcaba como advertencia. Se cambió a
+> bloquear por decisión explícita — este es exactamente el tipo de
+> decisión de negocio que el enunciado deja abierta a propósito, y no hay
+> una única respuesta correcta; lo importante es poder justificarla,
+> no que sea la primera que se te ocurra.
 
-Si el negocio decidiera después que ciertos traslapes sí deben bloquearse
-(p. ej. mismo cliente, mismo horario exacto = probable doble captura por
-error), el punto de extensión ya existe: `mark_overlaps()` /  el `SELECT`
-de traslape en `handle_create()` son el lugar natural para añadir esa regla
-más estricta sin tocar el resto del sistema.
+**Por qué bloquear (la decisión final):**
+- Un registro de horas traslapado casi siempre es un **error de captura**
+  (mala hora de inicio/fin), no un caso legítimo — nadie factura dos
+  cosas distintas por las mismas dos horas del reloj. Dejarlo pasar
+  significa que ese error solo se descubre después, cuando alguien revisa
+  el resumen o la factura ya salió mal.
+- Bloquear en el momento de la captura es la intervención más barata
+  posible: la persona que se equivocó **todavía tiene el contexto** de qué
+  horario era el correcto, en vez de tener que reconstruirlo días después
+  al revisar un reporte.
+- El mensaje de error no es genérico: dice con qué horario exacto choca
+  (`"...se traslapa con otro registro tuyo del mismo día (09:00–12:00)"`),
+  así que corregirlo es inmediato — no es una barrera sin salida, es una
+  validación con la información necesaria para arreglarla ahí mismo.
+- El registro `time_records` no distingue "una hora de reloj" de
+  "atención simultánea a dos clientes" — el modelo de datos actual asume
+  que una hora de un consultor se dedica a un solo cliente. Si el negocio
+  necesitara de verdad permitir doble atención simultánea, sería un cambio
+  de modelo de datos, no solo de esta regla de validación.
+
+**Qué se queda del diseño anterior:** `mark_overlaps()` (usada al listar
+registros) sigue existiendo y sigue marcando visualmente cualquier
+traslape que ya esté en los datos — por ejemplo el ejemplo del 6 de
+agosto, que sigue en `seed_data.json` sin cambios (nunca pasó por
+`handle_create()`, así que el bloqueo nuevo no lo afecta). Es una decisión
+consciente: los datos de prueba deben poder demostrar que el sistema
+*detecta* traslapes existentes, aparte de que ahora también *impida
+crear* otros nuevos — son dos capas relacionadas pero distintas.
+
+**Versión anterior (para que quede constancia del cambio):** la primera
+implementación permitía guardar el registro traslapado y solo devolvía
+una advertencia (`warning`) junto con `201 Created`. La justificación de
+esa versión era que un consultor podía tener razones legítimas para un
+traslape (cambio rápido de contexto, corrección posterior) y que bloquear
+le quitaría la posibilidad de dejar constancia de lo que pasó. Es un
+argumento razonable — y por eso este es un caso genuino de "no hay una
+única respuesta correcta" — pero, sopesando ambos lados, se prefirió
+bloquear: en la práctica, un traslape casi siempre es un typo de horario,
+y el costo de bloquear (volver a escribir la hora correcta, ahí mismo) es
+mucho menor que el costo de dejar pasar un dato de facturación
+probablemente equivocado.
 
 ### 2.2 Visibilidad del resumen financiero de otros consultores
 
